@@ -13,10 +13,89 @@ import (
 )
 
 const HIGH_SIMILARITY = 30
-const MODERATE_SIMILARITY = 100
 
 func GenerateReport(repos []string) Report {
 	return Report{}
+}
+
+func GenerateReportFromWorkflows(workflows map[string][]string) Report {
+
+	repoActions := convertWorkflowToActionsMap(workflows)
+
+	repoNames := maps.Keys(repoActions)
+	sortedRepoNames := slices.Sorted(repoNames)
+
+	report := Report{
+		Comparisons: map[string]map[string]RepoMeasurements{},
+	}
+
+	for i := 0; i < len(sortedRepoNames); i++ {
+		for j := i + 1; j < len(sortedRepoNames); j++ {
+			repo1 := sortedRepoNames[i]
+			repo2 := sortedRepoNames[j]
+
+			actionsList1 := repoActions[repo1]
+			actionsList2 := repoActions[repo2]
+
+			for _, actions1 := range actionsList1 {
+				for _, actions2 := range actionsList2 {
+					diffVersions := FindActionsWithDifferentVersions(actions1, actions2)
+					similarConfigs := FindActionsWithSimilarConfigurations(actions1, actions2)
+
+					if _, ok := report.Comparisons[repo1]; !ok {
+						report.Comparisons[repo1] = make(map[string]RepoMeasurements)
+					}
+
+					if _, ok := report.Comparisons[repo2]; !ok {
+						report.Comparisons[repo2] = make(map[string]RepoMeasurements)
+					}
+
+					report.Comparisons[repo1][repo2] = RepoMeasurements{
+						StepsWithDifferentVersions: diffVersions,
+						StepsWithSimilarConfig:     similarConfigs,
+					}
+
+					report.Comparisons[repo2][repo1] = RepoMeasurements{
+						StepsWithDifferentVersions: diffVersions,
+						StepsWithSimilarConfig:     similarConfigs,
+					}
+
+					if diffVersions > 0 || similarConfigs > 0 {
+						fmt.Printf("Comparison between %s and %s:\n", repo1, repo2)
+						if diffVersions > 0 {
+							fmt.Printf("  Steps with different versions: %d\n", diffVersions)
+						}
+						if similarConfigs > 0 {
+							fmt.Printf("  Steps with similar configurations: %d\n", similarConfigs)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return report
+}
+
+func convertWorkflowToActionsMap(workflows map[string][]string) map[string][][]Action {
+	repoActions := make(map[string][][]Action)
+
+	for repo, workflowFiles := range workflows {
+		fmt.Printf("Repo: %s\n", repo)
+		for _, workflowFile := range workflowFiles {
+			fmt.Printf("  Workflow: %s\n", workflowFile)
+
+			actions := ParseWorkflow(workflowFile)
+
+			for _, action := range actions {
+				fmt.Printf("    Action: %s@%s\n", action.Uses, action.UsesVersion)
+			}
+
+			repoActions[repo] = append(repoActions[repo], actions)
+		}
+	}
+
+	return repoActions
 }
 
 func getClient(jwt string) (context.Context, *github.Client) {
@@ -288,7 +367,7 @@ func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) int 
 	for _, action1 := range actions1 {
 		for _, action2 := range actions2 {
 			if action1.Uses == action2.Uses && action1.UsesVersion != action2.UsesVersion {
-				count++
+				count += 2
 			}
 		}
 	}

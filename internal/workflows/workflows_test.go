@@ -1,6 +1,7 @@
 package workflows
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -459,5 +460,138 @@ func TestFindActionsWithSimilarConfigurationsMultiplePairs(t *testing.T) {
 	// All should be highly similar, so count should be 8 (2 per similar pair)
 	if count < 4 {
 		t.Errorf("Expected at least 4 (2x2x2) similar configurations, got %d", count)
+	}
+}
+
+func TestGenerateReportFromWorkflows(t *testing.T) {
+	workflow1 := `
+name: Workflow 1
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+`
+
+	workflow2 := `
+name: Workflow 2
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+`
+
+	workflow3 := `
+name: Workflow 3
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+`
+
+	workflows := map[string][]string{
+		"repo1": {workflow1},
+		"repo2": {workflow2},
+		"repo3": {workflow3},
+	}
+
+	report := GenerateReportFromWorkflows(workflows)
+
+	// Verify report structure is initialized
+	if report.Comparisons == nil {
+		t.Error("Expected Comparisons map to be initialized")
+	}
+
+	if report.Comparisons["repo1"]["repo2"].StepsWithDifferentVersions != 2 {
+		t.Error("Expected 2 different versions between repo1 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo2"].StepsWithDifferentVersions))
+	}
+
+	if report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig != 4 {
+		t.Error("Expected 2 similar configurations between repo1 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig))
+	}
+
+	if report.Comparisons["repo1"]["repo3"].StepsWithDifferentVersions != 0 {
+		t.Error("Expected 2 different versions between repo1 and repo3, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo3"].StepsWithDifferentVersions))
+	}
+
+	if report.Comparisons["repo1"]["repo3"].StepsWithSimilarConfig != 0 {
+		t.Error("Expected 0 similar configurations between repo1 and repo3, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo3"].StepsWithSimilarConfig))
+	}
+
+	if report.Comparisons["repo2"]["repo1"].StepsWithDifferentVersions != 2 {
+		t.Error("Expected 2 different versions between repo2 and repo1, found " + fmt.Sprintf("%v", report.Comparisons["repo2"]["repo1"].StepsWithDifferentVersions))
+	}
+
+	if report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfig != 4 {
+		t.Error("Expected 2 similar configurations between repo2 and repo1, found " + fmt.Sprintf("%v", report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfig))
+	}
+
+	if report.Comparisons["repo2"]["repo3"].StepsWithDifferentVersions != 0 {
+		t.Error("Expected 2 different versions between repo2 and repo3, found " + fmt.Sprintf("%v", report.Comparisons["repo2"]["repo3"].StepsWithDifferentVersions))
+	}
+
+	if report.Comparisons["repo2"]["repo3"].StepsWithSimilarConfig != 0 {
+		t.Error("Expected 0 similar configurations between repo2 and repo3, found " + fmt.Sprintf("%v", report.Comparisons["repo2"]["repo3"].StepsWithSimilarConfig))
+	}
+
+	if report.Comparisons["repo3"]["repo1"].StepsWithDifferentVersions != 0 {
+		t.Error("Expected 2 different versions between repo3 and repo1, found " + fmt.Sprintf("%v", report.Comparisons["repo3"]["repo1"].StepsWithDifferentVersions))
+	}
+
+	if report.Comparisons["repo3"]["repo1"].StepsWithSimilarConfig != 0 {
+		t.Error("Expected 0 similar configurations between repo3 and repo1, found " + fmt.Sprintf("%v", report.Comparisons["repo3"]["repo1"].StepsWithSimilarConfig))
+	}
+
+	if report.Comparisons["repo3"]["repo2"].StepsWithDifferentVersions != 0 {
+		t.Error("Expected 2 different versions between repo3 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo3"]["repo2"].StepsWithDifferentVersions))
+	}
+
+	if report.Comparisons["repo3"]["repo2"].StepsWithSimilarConfig != 0 {
+		t.Error("Expected 0 similar configurations between repo3 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo3"]["repo2"].StepsWithSimilarConfig))
+	}
+}
+
+func TestGenerateReportFromWorkflowsEmpty(t *testing.T) {
+	workflows := map[string][]string{}
+
+	report := GenerateReportFromWorkflows(workflows)
+
+	if report.Comparisons == nil {
+		t.Error("Expected Comparisons map to be initialized even for empty input")
+	}
+}
+
+func TestGenerateReportFromWorkflowsSingleRepo(t *testing.T) {
+	workflow := `
+name: Single Workflow
+jobs:
+  build:
+    steps:
+      - uses: actions/checkout@v3
+`
+
+	workflows := map[string][]string{
+		"repo1": {workflow},
+	}
+
+	report := GenerateReportFromWorkflows(workflows)
+
+	// With only one repo, there should be no comparisons
+	if report.Comparisons == nil {
+		t.Error("Expected Comparisons map to be initialized")
 	}
 }
