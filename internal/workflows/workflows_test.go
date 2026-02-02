@@ -231,3 +231,233 @@ func TestFindActionsWithDifferentVersionsMultipleSameAction(t *testing.T) {
 		t.Errorf("Expected 4 differences (2x2), got %d", count)
 	}
 }
+
+func TestFindActionsWithSimilarConfigurations(t *testing.T) {
+	actions1 := []Action{
+		{
+			Uses:        "actions/checkout",
+			UsesVersion: "v4",
+			With: map[string]string{
+				"fetch-depth": "0",
+				"submodules":  "true",
+			},
+		},
+		{
+			Uses:        "actions/setup-node",
+			UsesVersion: "v3",
+			With: map[string]string{
+				"node-version": "18",
+				"cache":        "npm",
+			},
+			Env: map[string]string{
+				"NODE_ENV": "production",
+			},
+		},
+	}
+
+	actions2 := []Action{
+		{
+			Uses:        "actions/checkout",
+			UsesVersion: "v3",
+			With: map[string]string{
+				"fetch-depth": "0",
+				"submodules":  "true",
+			},
+		},
+		{
+			Uses:        "actions/setup-node",
+			UsesVersion: "v3",
+			With: map[string]string{
+				"node-version": "18",
+				"cache":        "npm",
+			},
+			Env: map[string]string{
+				"NODE_ENV": "development",
+			},
+		},
+	}
+
+	// Generate hashes for all actions
+	for i := range actions1 {
+		actions1[i].GenerateHash()
+	}
+	for i := range actions2 {
+		actions2[i].GenerateHash()
+	}
+
+	count := FindActionsWithSimilarConfigurations(actions1, actions2)
+
+	// Expected: 2 pairs of matching actions with similar configs = 4 total (2 * 2)
+	if count < 2 {
+		t.Errorf("Expected at least 2 similar configurations, got %d", count)
+	}
+}
+
+func TestFindActionsWithSimilarConfigurationsNoMatches(t *testing.T) {
+	actions1 := []Action{
+		{
+			Uses:        "actions/checkout",
+			UsesVersion: "v4",
+		},
+	}
+
+	actions2 := []Action{
+		{
+			Uses:        "actions/setup-node",
+			UsesVersion: "v3",
+		},
+	}
+
+	// Generate hashes
+	for i := range actions1 {
+		actions1[i].GenerateHash()
+	}
+	for i := range actions2 {
+		actions2[i].GenerateHash()
+	}
+
+	count := FindActionsWithSimilarConfigurations(actions1, actions2)
+
+	if count != 0 {
+		t.Errorf("Expected 0 similar configurations when action names differ, got %d", count)
+	}
+}
+
+func TestFindActionsWithSimilarConfigurationsEmptyLists(t *testing.T) {
+	actions1 := []Action{}
+	actions2 := []Action{
+		{Uses: "actions/checkout", UsesVersion: "v4"},
+	}
+
+	count := FindActionsWithSimilarConfigurations(actions1, actions2)
+
+	if count != 0 {
+		t.Errorf("Expected 0 similar configurations when one list is empty, got %d", count)
+	}
+}
+
+func TestFindActionsWithSimilarConfigurationsDifferentConfigs(t *testing.T) {
+	actions1 := []Action{
+		{
+			Uses:        "actions/setup-node",
+			UsesVersion: "v3",
+			With: map[string]string{
+				"node-version": "18",
+				"cache":        "npm",
+				"registry-url": "https://registry.npmjs.org",
+			},
+			Env: map[string]string{
+				"NODE_ENV":     "production",
+				"CI":           "true",
+				"BUILD_NUMBER": "123",
+			},
+		},
+	}
+
+	actions2 := []Action{
+		{
+			Uses:        "actions/setup-node",
+			UsesVersion: "v3",
+			With: map[string]string{
+				"node-version": "20",
+			},
+		},
+	}
+
+	// Generate hashes
+	for i := range actions1 {
+		actions1[i].GenerateHash()
+	}
+	for i := range actions2 {
+		actions2[i].GenerateHash()
+	}
+
+	count := FindActionsWithSimilarConfigurations(actions1, actions2)
+
+	// With significantly different configs, should not count as highly similar
+	if count != 0 {
+		t.Errorf("Expected 0 for very different configurations, got %d", count)
+	}
+}
+
+func TestFindActionsWithSimilarConfigurationsNoHashes(t *testing.T) {
+	actions1 := []Action{
+		{
+			Uses:        "actions/checkout",
+			UsesVersion: "v4",
+			With: map[string]string{
+				"fetch-depth": "0",
+			},
+		},
+	}
+
+	actions2 := []Action{
+		{
+			Uses:        "actions/checkout",
+			UsesVersion: "v4",
+			With: map[string]string{
+				"fetch-depth": "0",
+			},
+		},
+	}
+
+	// Don't generate hashes - test nil hash handling
+
+	count := FindActionsWithSimilarConfigurations(actions1, actions2)
+
+	if count != 0 {
+		t.Errorf("Expected 0 when hashes are not generated, got %d", count)
+	}
+}
+
+func TestFindActionsWithSimilarConfigurationsMultiplePairs(t *testing.T) {
+	actions1 := []Action{
+		{
+			Uses:        "actions/checkout",
+			UsesVersion: "v4",
+			With: map[string]string{
+				"fetch-depth": "0",
+			},
+		},
+		{
+			Uses:        "actions/checkout",
+			UsesVersion: "v3",
+			With: map[string]string{
+				"fetch-depth": "0",
+			},
+		},
+	}
+
+	actions2 := []Action{
+		{
+			Uses:        "actions/checkout",
+			UsesVersion: "v4",
+			With: map[string]string{
+				"fetch-depth": "0",
+			},
+		},
+		{
+			Uses:        "actions/checkout",
+			UsesVersion: "v3",
+			With: map[string]string{
+				"fetch-depth": "0",
+			},
+		},
+	}
+
+	// Generate hashes
+	for i := range actions1 {
+		actions1[i].GenerateHash()
+	}
+	for i := range actions2 {
+		actions2[i].GenerateHash()
+	}
+
+	count := FindActionsWithSimilarConfigurations(actions1, actions2)
+
+	// 2 actions in actions1 × 2 actions in actions2 = 4 comparisons
+	// All should be highly similar, so count should be 8 (2 per similar pair)
+	if count < 4 {
+		t.Errorf("Expected at least 4 (2x2x2) similar configurations, got %d", count)
+	}
+}

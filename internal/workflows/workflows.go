@@ -12,6 +12,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const HIGH_SIMILARITY = 30
+const MODERATE_SIMILARITY = 100
+
 func GenerateReport(repos []string) Report {
 	return Report{}
 }
@@ -230,6 +233,8 @@ func ParseWorkflow(workflow string) []Action {
 				With:        with,
 			}
 
+			action.GenerateHash()
+
 			actions = append(actions, action)
 		}
 	}
@@ -292,5 +297,23 @@ func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) int 
 }
 
 func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) int {
-	return 0
+
+	count := 0
+
+	for _, action1 := range actions1 {
+		for _, action2 := range actions2 {
+			if action1.Uses == action2.Uses {
+				if action1.hash != nil && action2.hash != nil {
+					distance := action1.hash.Diff(action2.hash)
+
+					if distance <= HIGH_SIMILARITY {
+						// two steps that are similar
+						count += 2
+					}
+				}
+			}
+		}
+	}
+
+	return count
 }
