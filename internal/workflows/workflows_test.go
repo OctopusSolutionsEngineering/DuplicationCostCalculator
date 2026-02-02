@@ -31,6 +31,14 @@ jobs:
           go-version: '1.22'
         env:
           CGO_ENABLED: '0'
+
+      - name: Install Tofu
+        run: |
+          curl --proto '=https' --tlsv1.2 -fsSL https://get.opentofu.org/install-opentofu.sh -o install-opentofu.sh
+          chmod +x install-opentofu.sh
+          ./install-opentofu.sh --install-method deb
+          rm -f install-opentofu.sh
+        shell: bash
           
   deploy:
     runs-on: ubuntu-latest
@@ -40,8 +48,8 @@ jobs:
 
 	actions := ParseWorkflow(workflowYAML)
 
-	if len(actions) != 4 {
-		t.Errorf("Expected 4 actions, got %d", len(actions))
+	if len(actions) != 5 {
+		t.Errorf("Expected 5 actions, got %d", len(actions))
 	}
 
 	// Test first action
@@ -74,13 +82,25 @@ jobs:
 		t.Errorf("Expected third action version to be 'v4.1.0', got '%s'", actions[2].UsesVersion)
 	}
 
-	// Test fourth action (no version specified)
-	if actions[3].Uses != "actions/checkout" {
-		t.Errorf("Expected fourth action to be 'actions/checkout', got '%s'", actions[3].Uses)
+	// Test fourth action (run command, should be ignored)
+	if actions[3].Uses != "" {
+		t.Errorf("Expected fourth action to be blank, got '%s'", actions[4].Uses)
 	}
-	if actions[3].UsesVersion != "v3" {
-		t.Errorf("Expected fourth action version to be 'v3', got '%s'", actions[3].UsesVersion)
+	if actions[3].Settings["name"] != "Install Tofu" {
+		t.Errorf("Expected fourth name to be 'Install Tofu', got '%s'", actions[3].Settings["name"])
 	}
+	if actions[3].Settings["shell"] != "bash" {
+		t.Errorf("Expected fourth shell to be 'bash', got '%s'", actions[3].Settings["shell"])
+	}
+
+	// Test fifth action (no version specified)
+	if actions[4].Uses != "actions/checkout" {
+		t.Errorf("Expected fifth action to be 'actions/checkout', got '%s'", actions[4].Uses)
+	}
+	if actions[4].UsesVersion != "v3" {
+		t.Errorf("Expected fifth action version to be 'v3', got '%s'", actions[4].UsesVersion)
+	}
+
 }
 
 func TestParseWorkflowInvalidYAML(t *testing.T) {
@@ -117,5 +137,97 @@ jobs:
 
 	if len(actions) != 0 {
 		t.Errorf("Expected 0 actions when no steps defined, got %d", len(actions))
+	}
+}
+
+func TestFindActionsWithDifferentVersions(t *testing.T) {
+	actions1 := []Action{
+		{Uses: "actions/checkout", UsesVersion: "v3"},
+		{Uses: "actions/setup-node", UsesVersion: "v3"},
+		{Uses: "actions/setup-go", UsesVersion: "v4"},
+		{Uses: "actions/cache", UsesVersion: "v3"},
+	}
+
+	actions2 := []Action{
+		{Uses: "actions/checkout", UsesVersion: "v4"},
+		{Uses: "actions/setup-node", UsesVersion: "v3"},
+		{Uses: "actions/setup-go", UsesVersion: "v5"},
+		{Uses: "actions/upload-artifact", UsesVersion: "v3"},
+	}
+
+	count := FindActionsWithDifferentVersions(actions1, actions2)
+
+	// Expected: checkout (v3 vs v4) and setup-go (v4 vs v5) = 2 differences
+	if count != 2 {
+		t.Errorf("Expected 2 actions with different versions, got %d", count)
+	}
+}
+
+func TestFindActionsWithDifferentVersionsNoMatches(t *testing.T) {
+	actions1 := []Action{
+		{Uses: "actions/checkout", UsesVersion: "v3"},
+		{Uses: "actions/setup-node", UsesVersion: "v3"},
+	}
+
+	actions2 := []Action{
+		{Uses: "actions/setup-go", UsesVersion: "v4"},
+		{Uses: "actions/cache", UsesVersion: "v3"},
+	}
+
+	count := FindActionsWithDifferentVersions(actions1, actions2)
+
+	if count != 0 {
+		t.Errorf("Expected 0 actions with different versions, got %d", count)
+	}
+}
+
+func TestFindActionsWithDifferentVersionsSameVersions(t *testing.T) {
+	actions1 := []Action{
+		{Uses: "actions/checkout", UsesVersion: "v4"},
+		{Uses: "actions/setup-node", UsesVersion: "v3"},
+	}
+
+	actions2 := []Action{
+		{Uses: "actions/checkout", UsesVersion: "v4"},
+		{Uses: "actions/setup-node", UsesVersion: "v3"},
+	}
+
+	count := FindActionsWithDifferentVersions(actions1, actions2)
+
+	if count != 0 {
+		t.Errorf("Expected 0 actions with different versions when all match, got %d", count)
+	}
+}
+
+func TestFindActionsWithDifferentVersionsEmptyLists(t *testing.T) {
+	actions1 := []Action{}
+	actions2 := []Action{
+		{Uses: "actions/checkout", UsesVersion: "v4"},
+	}
+
+	count := FindActionsWithDifferentVersions(actions1, actions2)
+
+	if count != 0 {
+		t.Errorf("Expected 0 actions with different versions when one list is empty, got %d", count)
+	}
+}
+
+func TestFindActionsWithDifferentVersionsMultipleSameAction(t *testing.T) {
+	actions1 := []Action{
+		{Uses: "actions/checkout", UsesVersion: "v3"},
+		{Uses: "actions/checkout", UsesVersion: "v3"},
+	}
+
+	actions2 := []Action{
+		{Uses: "actions/checkout", UsesVersion: "v4"},
+		{Uses: "actions/checkout", UsesVersion: "v4"},
+	}
+
+	count := FindActionsWithDifferentVersions(actions1, actions2)
+
+	// Each instance in actions1 matches with each instance in actions2
+	// 2 * 2 = 4 differences
+	if count != 4 {
+		t.Errorf("Expected 4 differences (2x2), got %d", count)
 	}
 }

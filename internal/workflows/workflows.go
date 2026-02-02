@@ -3,6 +3,8 @@ package workflows
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/google/go-github/v57/github"
@@ -163,11 +165,17 @@ func ParseWorkflow(workflow string) []Action {
 		return []Action{}
 	}
 
+	// 1. Get all keys into a slice
+	keys := slices.Collect(maps.Keys(jobsMap))
+
+	// 2. Sort the keys alphabetically
+	slices.Sort(keys)
+
 	var actions []Action
 
 	// Iterate through jobs and parse actions
-	for _, jobInterface := range jobsMap {
-		jobMap, ok := jobInterface.(map[string]interface{})
+	for _, key := range keys {
+		jobMap, ok := jobsMap[key].(map[string]interface{})
 		if !ok {
 			continue
 		}
@@ -189,14 +197,14 @@ func ParseWorkflow(workflow string) []Action {
 				continue
 			}
 
+			uses := ""
 			usesInterface, ok := stepMap["uses"]
-			if !ok {
-				continue
-			}
-
-			uses, ok := usesInterface.(string)
-			if !ok {
-				continue
+			if ok {
+				usesString, ok := usesInterface.(string)
+				if ok {
+					// Script steps often don't have a 'uses' field
+					uses = usesString
+				}
 			}
 
 			// Split uses into action and version
@@ -212,11 +220,12 @@ func ParseWorkflow(workflow string) []Action {
 
 			env := convertStringMap(getChildMap(stepMap, "env"))
 			with := convertStringMap(getChildMap(stepMap, "with"))
+			settings := getOtherValues(stepMap, []string{"uses", "env", "with"})
 
 			action := Action{
 				Uses:        actionName,
 				UsesVersion: actionVersion,
-				Settings:    make(map[string]string),
+				Settings:    settings,
 				Env:         env,
 				With:        with,
 			}
@@ -226,6 +235,22 @@ func ParseWorkflow(workflow string) []Action {
 	}
 
 	return actions
+}
+
+func getOtherValues(input map[string]interface{}, excludeKeys []string) map[string]string {
+	result := make(map[string]string)
+	excludeMap := make(map[string]bool)
+	for _, key := range excludeKeys {
+		excludeMap[key] = true
+	}
+
+	for key, value := range input {
+		if !excludeMap[key] {
+			result[key] = fmt.Sprintf("%v", value)
+		}
+	}
+
+	return result
 }
 
 func getChildMap(input map[string]interface{}, key string) map[string]interface{} {
@@ -253,7 +278,17 @@ func convertStringMap(input map[string]interface{}) map[string]string {
 }
 
 func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) int {
-	return 0
+	count := 0
+
+	for _, action1 := range actions1 {
+		for _, action2 := range actions2 {
+			if action1.Uses == action2.Uses && action1.UsesVersion != action2.UsesVersion {
+				count++
+			}
+		}
+	}
+
+	return count
 }
 
 func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) int {
