@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const HIGH_SIMILARITY = 30
+const HighSimilarity = 30
 
 func GenerateReport(repos []string) Report {
 	return Report{}
@@ -385,7 +385,7 @@ func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) 
 				if action1.hash != nil && action2.hash != nil {
 					distance := action1.hash.Diff(action2.hash)
 
-					if distance <= HIGH_SIMILARITY {
+					if distance <= HighSimilarity {
 						// two steps that are similar
 						count += 2
 					}
