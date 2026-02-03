@@ -17,7 +17,7 @@
             const [repositories, setRepositories] = useState([
                 "OctopusSolutionsEngineering/OctopusTerraformExport",
                 "OctopusSolutionsEngineering/OctopusRecommendationEngine",
-                "",
+                "OctopusSolutionsEngineering/OctopusCopilot",
                 "",
                 "",
                 "",
@@ -28,6 +28,7 @@
             ]);
             const [isLoading, setIsLoading] = useState(false);
             const [error, setError] = useState('');
+            const [results, setResults] = useState(null);
 
             const handleInputChange = (index, value) => {
                 const newRepos = [...repositories];
@@ -56,8 +57,7 @@
                     }
 
                     const result = await response.json();
-                    console.log('Result:', result);
-                    // Handle the result as needed
+                    setResults(result);
 
                 } catch (err) {
                     setError(err.message);
@@ -66,6 +66,97 @@
                 }
             };
 
+            // If we have results, clear the document and show the results table
+            if (results) {
+                return h('div', { className: 'container-fluid mt-4' },
+                    h('div', { className: 'mb-3' },
+                        h('button', {
+                            className: 'btn btn-secondary',
+                            onClick: () => setResults(null)
+                        }, '← Back to Input')
+                    ),
+
+                    h('h1', { className: 'mb-4' }, 'Duplication Cost Analysis'),
+
+                    // Matrix Table
+                    h('div', { className: 'table-responsive' },
+                        (() => {
+                            // Get all unique repository names
+                            const allRepos = Object.keys(results.comparisons || {});
+
+                            return h('table', { className: 'table table-bordered table-hover' },
+                                        // Table header
+                                        h('thead', { className: 'table-light' },
+                                            h('tr', null,
+                                                h('th', { className: 'text-center align-middle', style: 'min-width: 200px;' }, 'Repository'),
+                                                ...allRepos.map(repo => {
+                                                    const [org, repoName] = repo.split('/');
+                                                    return h('th', {
+                                                        key: repo,
+                                                        className: 'text-center align-middle',
+                                                        style: 'min-width: 120px; max-width: 150px;'
+                                                    },
+                                                        h('div', { style: 'font-size: 0.75rem; line-height: 1.2;' },
+                                                            h('div', { className: 'text-muted' }, org || ''),
+                                                            h('div', { className: 'fw-bold' }, repoName || repo)
+                                                        )
+                                                    );
+                                                })
+                                            )
+                                        ),
+                                        // Table body
+                                        h('tbody', null,
+                                            allRepos.map(repo1 => {
+                                                const [org1, repoName1] = repo1.split('/');
+                                                return h('tr', { key: repo1 },
+                                                    h('th', { className: 'align-middle', style: 'max-width: 200px; word-wrap: break-word;' },
+                                                        h('div', { style: 'font-size: 0.85rem; line-height: 1.3;' },
+                                                            h('div', { className: 'text-muted' }, org1 || ''),
+                                                            h('div', { className: 'fw-bold' }, repoName1 || repo1)
+                                                        )
+                                                    ),
+                                                    ...allRepos.map(repo2 => {
+                                                        if (repo1 === repo2) {
+                                                            // Same repository - show blank cell
+                                                            return h('td', {
+                                                                key: repo2,
+                                                                className: 'text-center bg-light'
+                                                            }, '');
+                                                        } else {
+                                                            // Different repositories - show comparison data
+                                                            const comparison = results.comparisons[repo1]?.[repo2];
+                                                            if (comparison) {
+                                                                return h('td', {
+                                                                    key: repo2,
+                                                                    className: 'text-center align-middle'
+                                                                },
+                                                                    h('div', { className: 'small' },
+                                                                        h('div', { className: 'text-warning fw-bold' },
+                                                                            `Version Drift: ${comparison.stepsWithDifferentVersionsCount}`
+                                                                        ),
+                                                                        h('div', { className: 'text-info fw-bold' },
+                                                                            `Similar Actions: ${comparison.stepsWithSimilarConfigCount}`
+                                                                        )
+                                                                    )
+                                                                );
+                                                            } else {
+                                                                return h('td', {
+                                                                    key: repo2,
+                                                                    className: 'text-center text-muted'
+                                                                }, '-');
+                                                            }
+                                                        }
+                                                    })
+                                                );
+                                            })
+                                        )
+                                    );
+                                })()
+                            )
+                );
+            }
+
+            // Otherwise show the input form
             return h('div', { className: 'container mt-5' },
                 h('div', { className: 'row justify-content-center' },
                     h('div', { className: 'col-md-8' },
