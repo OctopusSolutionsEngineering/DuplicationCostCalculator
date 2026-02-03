@@ -14,6 +14,7 @@ import (
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v57/github"
 	"github.com/samber/lo"
+	"golang.org/x/oauth2"
 	"gopkg.in/yaml.v3"
 )
 
@@ -33,7 +34,9 @@ func GenerateReport(client *github.Client, repos []string) Report {
 		}
 	}
 
-	return GenerateReportFromWorkflows(workflowsContent)
+	report := GenerateReportFromWorkflows(workflowsContent)
+
+	return report
 }
 
 func GenerateReportFromWorkflows(workflows map[string][]string) Report {
@@ -110,6 +113,21 @@ func convertWorkflowToActionsMap(workflows map[string][]string) map[string][][]A
 	}
 
 	return repoActions
+}
+
+func GetClient(jwt string) *github.Client {
+	ctx := context.Background()
+
+	// Create a token source with the JWT
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: jwt},
+	)
+
+	// Create an HTTP client with the token
+	tc := oauth2.NewClient(ctx, ts)
+
+	// Create and return the GitHub client
+	return github.NewClient(tc)
 }
 
 func GetClientLocal() *github.Client {
