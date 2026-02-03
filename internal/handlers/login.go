@@ -3,12 +3,12 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/config"
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/client"
 	"github.com/gin-gonic/gin"
 )
 
 func Login(c *gin.Context) {
-	if config.UsePrivateKeyAuth() {
+	if client.UsePrivateKeyAuth() {
 		// Redirect to calculate page as there is no need to log in
 		c.Redirect(http.StatusFound, "/calculate")
 	}
