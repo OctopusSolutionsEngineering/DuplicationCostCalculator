@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/config"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/workflows"
 	"github.com/gin-gonic/gin"
+	"github.com/google/go-github/v57/github"
 )
 
 func main() {
@@ -16,6 +18,11 @@ func main() {
 
 	// Serve index.html at root path
 	r.GET("/", func(c *gin.Context) {
+		if config.UsePrivateKeyAuth() {
+			// Redirect to calculate page as there is no need to log in
+			c.Redirect(http.StatusFound, "/calculate")
+		}
+
 		// Check if github_token cookie exists
 		token, err := c.Cookie("github_token")
 		if err == nil && token != "" {
@@ -29,12 +36,16 @@ func main() {
 	})
 
 	r.GET("/calculate", func(c *gin.Context) {
-		// Check if github_token cookie exists
-		token, err := c.Cookie("github_token")
-		if err != nil || token == "" {
-			// User is not authenticated, redirect to login page
-			c.Redirect(http.StatusFound, "/")
-			return
+		// We can only define one redirection URL for a github app. To test the app locally,
+		// we can use a private key for authentication instead of OAuth.
+		if !config.UsePrivateKeyAuth() {
+			// Check if github_token cookie exists
+			token, err := c.Cookie("github_token")
+			if err != nil || token == "" {
+				// User is not authenticated, redirect to login page
+				c.Redirect(http.StatusFound, "/")
+				return
+			}
 		}
 
 		// User is authenticated, show calculate page
@@ -139,13 +150,17 @@ func main() {
 	})
 
 	r.POST("/cost", func(c *gin.Context) {
-		// Extract access token from cookie
-		accessToken, err := c.Cookie("github_token")
-		if err != nil || accessToken == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Unauthorized - no access token found",
-			})
-			return
+		accessToken := ""
+
+		if !config.UsePrivateKeyAuth() {
+			// Extract access token from cookie
+			accessToken, err := c.Cookie("github_token")
+			if err != nil || accessToken == "" {
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"error": "Unauthorized - no access token found",
+				})
+				return
+			}
 		}
 
 		// Parse request body
@@ -160,7 +175,7 @@ func main() {
 			return
 		}
 
-		client := workflows.GetClient(accessToken)
+		client := getClient(accessToken)
 
 		report := workflows.GenerateReport(client, requestBody.Repositories)
 
@@ -169,4 +184,12 @@ func main() {
 
 	// Start server on port 8080
 	r.Run(":8080")
+}
+
+func getClient(accessToken string) *github.Client {
+	if config.UsePrivateKeyAuth() {
+		return workflows.GetClientLocal()
+	}
+
+	return workflows.GetClient(accessToken)
 }

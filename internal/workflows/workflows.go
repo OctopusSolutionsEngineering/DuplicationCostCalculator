@@ -21,18 +21,21 @@ import (
 const HighSimilarity = 30
 
 type RepoActions struct {
-	Repo      string
-	Workflows []string
+	Repo         string
+	Workflows    []string
+	Contributors []string
 }
 
 func GenerateReport(client *github.Client, repos []string) Report {
 	result := make(chan RepoActions)
 	workflowsContent := map[string][]string{}
+	workflowsContributors := map[string][]string{}
 
 	for _, repo := range repos {
 		// Get the workflows in a goroutine
 		go func(client *github.Client, repo string) {
 			workflows := []string{}
+			contributors := []string{}
 			workflowFiles := FindWorkflows(client, repo)
 
 			for _, workflowFile := range workflowFiles {
@@ -40,11 +43,13 @@ func GenerateReport(client *github.Client, repos []string) Report {
 				if workflowStr != "" {
 					workflows = append(workflows, workflowStr)
 				}
+				contributors = FindContributorsToWorkflow(client, repo, workflowFile)
 			}
 
 			result <- RepoActions{
-				Repo:      repo,
-				Workflows: workflows,
+				Repo:         repo,
+				Workflows:    workflows,
+				Contributors: contributors,
 			}
 		}(client, repo)
 	}
@@ -53,14 +58,15 @@ func GenerateReport(client *github.Client, repos []string) Report {
 	for i := 0; i < len(repos); i++ {
 		repoActions := <-result
 		workflowsContent[repoActions.Repo] = repoActions.Workflows
+		workflowsContributors[repoActions.Repo] = repoActions.Contributors
 	}
 
-	report := GenerateReportFromWorkflows(workflowsContent)
+	report := GenerateReportFromWorkflows(workflowsContent, workflowsContributors)
 
 	return report
 }
 
-func GenerateReportFromWorkflows(workflows map[string][]string) Report {
+func GenerateReportFromWorkflows(workflows map[string][]string, contributors map[string][]string) Report {
 
 	repoActions := convertWorkflowToActionsMap(workflows)
 
@@ -69,12 +75,16 @@ func GenerateReportFromWorkflows(workflows map[string][]string) Report {
 
 	report := Report{
 		Comparisons:   map[string]map[string]RepoMeasurements{},
+		Contributors:  map[string][]string{},
 		NumberOfRepos: len(sortedRepoNames),
 	}
 
 	for i := 0; i < len(sortedRepoNames); i++ {
+		repo1 := sortedRepoNames[i]
+		report.Contributors[repo1] = contributors[repo1]
+
 		for j := i + 1; j < len(sortedRepoNames); j++ {
-			repo1 := sortedRepoNames[i]
+
 			repo2 := sortedRepoNames[j]
 
 			actionsList1 := repoActions[repo1]

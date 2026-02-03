@@ -19,9 +19,9 @@ func main() {
 
 	report := workflows.GenerateReport(client, args[1:])
 
-	for sourceRepo, comparasion := range report.Comparisons {
-		println(sourceRepo)
-		for repoName, measurements := range comparasion {
+	for sourceRepo, comparison := range report.Comparisons {
+		println(sourceRepo, "Contributors:", len(report.Contributors[sourceRepo]))
+		for repoName, measurements := range comparison {
 			println("  ", repoName)
 			println("    Steps that indicate duplication risk:", measurements.StepsThatIndicateDuplicationRisk)
 			println("    Steps with different versions:", measurements.StepsWithDifferentVersionsCount, strings.Join(measurements.StepsWithDifferentVersions, ", "))

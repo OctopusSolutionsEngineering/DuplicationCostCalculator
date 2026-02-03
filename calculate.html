@@ -100,6 +100,7 @@
                                                 h('th', { className: 'text-center align-middle', style: 'min-width: 200px;' }, 'Repository'),
                                                 ...allRepos.map(repo => {
                                                     const [org, repoName] = repo.split('/');
+                                                    const contributorCount = results.contributors?.[repo]?.length || 0;
                                                     return h('th', {
                                                         key: repo,
                                                         className: 'text-center align-middle',
@@ -107,7 +108,10 @@
                                                     },
                                                         h('div', { style: 'font-size: 0.75rem; line-height: 1.2;' },
                                                             h('div', { className: 'text-muted' }, org || ''),
-                                                            h('div', { className: 'fw-bold' }, repoName || repo)
+                                                            h('div', { className: 'fw-bold' }, repoName || repo),
+                                                            h('div', { className: 'text-muted small', style: 'font-size: 0.65rem;' },
+                                                                `${contributorCount} contributor${contributorCount !== 1 ? 's' : ''}`
+                                                            )
                                                         )
                                                     );
                                                 })
@@ -117,11 +121,15 @@
                                         h('tbody', null,
                                             allRepos.map(repo1 => {
                                                 const [org1, repoName1] = repo1.split('/');
+                                                const contributorCount1 = results.contributors?.[repo1]?.length || 0;
                                                 return h('tr', { key: repo1 },
                                                     h('th', { className: 'align-middle', style: 'max-width: 200px; word-wrap: break-word;' },
                                                         h('div', { style: 'font-size: 0.85rem; line-height: 1.3;' },
                                                             h('div', { className: 'text-muted' }, org1 || ''),
-                                                            h('div', { className: 'fw-bold' }, repoName1 || repo1)
+                                                            h('div', { className: 'fw-bold' }, repoName1 || repo1),
+                                                            h('div', { className: 'text-muted small', style: 'font-size: 0.7rem;' },
+                                                                `${contributorCount1} contributor${contributorCount1 !== 1 ? 's' : ''}`
+                                                            )
                                                         )
                                                     ),
                                                     ...allRepos.map(repo2 => {
@@ -198,7 +206,7 @@
                     ),
 
                     h('p', { className: 'mb-3 mt-4' },
-                        'A "consistent change" is any change to an action (such as a version or configuration change) in a GitHub Workflow that must be replicated consistently in all other workflows.'
+                        'A "consistent change" is any change to an action (such as a version or configuration change) in a GitHub Workflow that must be replicated consistently in other workflows.'
                     ),
                     h('p', { className: 'mb-3' },
                         'This includes:'
