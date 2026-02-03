@@ -47,7 +47,8 @@ func GenerateReportFromWorkflows(workflows map[string][]string) Report {
 	sortedRepoNames := slices.Sorted(repoNames)
 
 	report := Report{
-		Comparisons: map[string]map[string]RepoMeasurements{},
+		Comparisons:   map[string]map[string]RepoMeasurements{},
+		NumberOfRepos: len(sortedRepoNames),
 	}
 
 	for i := 0; i < len(sortedRepoNames); i++ {
@@ -96,6 +97,22 @@ func GenerateReportFromWorkflows(workflows map[string][]string) Report {
 			}
 		}
 	}
+
+	numberOfReposWithDuplicationOrDrift := 0
+	for _, repo := range sortedRepoNames {
+		foundDuplicationOrDrift := false
+		for _, measurements := range report.Comparisons[repo] {
+			if measurements.StepsThatIndicateDuplicationRisk > 0 {
+				foundDuplicationOrDrift = true
+
+			}
+		}
+		if foundDuplicationOrDrift {
+			numberOfReposWithDuplicationOrDrift++
+		}
+	}
+
+	report.NumberOfReposWithDuplicationOrDrift = numberOfReposWithDuplicationOrDrift
 
 	return report
 }
