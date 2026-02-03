@@ -83,7 +83,7 @@
                     // Summary Paragraph
                     h('div', { className: 'alert alert-info mb-4' },
                         h('p', { className: 'mb-0' },
-                            `This scan found ${results.numberOfReposWithDuplicationOrDrift} of ${results.numberOfRepos} (${results.numberOfReposWithDuplicationOrDrift / results.numberOfRepos * 100}%) repositories either shared actions with different versions (version drift) or included actions that were substantially similar to one another (duplicate actions).`
+                            `This scan found ${results.numberOfReposWithDuplicationOrDrift} of ${results.numberOfRepos} (${(results.numberOfReposWithDuplicationOrDrift / results.numberOfRepos * 100).toFixed(2)}%) repositories either shared actions with different versions (version drift) or included actions that were substantially similar to one another (duplicate actions).`
                         )
                     ),
 
