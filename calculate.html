@@ -241,9 +241,7 @@
                         ),
                         h('p', { className: 'font-monospace' },
                             `Repos with duplicate actions or version drift (${results.numberOfReposWithDuplicationOrDrift}) * hours to make a consistent change per repo (${hours}) * average annual salary of an engineer (${salary}) / 365 days / 8 hour workday.`
-                        )
-                    ),
-                    h('div', { className: 'alert alert-light mt-4' },
+                        ),
                         h('p', { className: 'mb-4' },
                             `Legend:`
                         ),
@@ -253,7 +251,7 @@
                             h('li', null, h('span', { className: 'fw-bold' }, 'Action Authors'), ': Number of different authors of actions used in a workflow e.g. actions/checkout, docker/build-push-action, and docker/metadata-action count as two authors - actions and docker.'),
                             h('li', null, h('span', { className: 'fw-bold' }, 'Contributors'), ': Number of people who have contributed to the git repo.')
                         )
-                    )
+                    ),
                 );
             }
 
