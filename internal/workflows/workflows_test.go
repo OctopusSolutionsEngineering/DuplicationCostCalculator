@@ -525,7 +525,7 @@ jobs:
 	}
 
 	if report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount != 4 {
-		t.Error("Expected 2 similar configurations between repo1 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount))
+		t.Error("Expected 4 similar configurations between repo1 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount))
 	}
 
 	if len(report.Comparisons["repo1"]["repo3"].StepsWithDifferentVersions) != 0 {
@@ -541,7 +541,7 @@ jobs:
 	}
 
 	if report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfigCount != 4 {
-		t.Error("Expected 2 similar configurations between repo2 and repo1, found " + fmt.Sprintf("%v %v", report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfigCount, report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfig))
+		t.Error("Expected 4 similar configurations between repo2 and repo1, found " + fmt.Sprintf("%v %v", report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfigCount, report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfig))
 	}
 
 	if len(report.Comparisons["repo2"]["repo3"].StepsWithDifferentVersions) != 0 {
