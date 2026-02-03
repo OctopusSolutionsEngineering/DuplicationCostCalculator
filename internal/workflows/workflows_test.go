@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@v3
 `
 
-	actions := ParseWorkflow(workflowYAML)
+	actions := ParseWorkflow(workflowYAML, 1)
 
 	if len(actions) != 5 {
 		t.Errorf("Expected 5 actions, got %d", len(actions))
@@ -108,7 +108,7 @@ func TestParseWorkflowInvalidYAML(t *testing.T) {
 	invalidYAML := `
 this is not valid yaml: [
 `
-	actions := ParseWorkflow(invalidYAML)
+	actions := ParseWorkflow(invalidYAML, 1)
 
 	if len(actions) != 0 {
 		t.Errorf("Expected 0 actions for invalid YAML, got %d", len(actions))
@@ -120,7 +120,7 @@ func TestParseWorkflowNoJobs(t *testing.T) {
 name: Empty Workflow
 on: [push]
 `
-	actions := ParseWorkflow(workflowYAML)
+	actions := ParseWorkflow(workflowYAML, 1)
 
 	if len(actions) != 0 {
 		t.Errorf("Expected 0 actions when no jobs defined, got %d", len(actions))
@@ -134,7 +134,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
 `
-	actions := ParseWorkflow(workflowYAML)
+	actions := ParseWorkflow(workflowYAML, 1)
 
 	if len(actions) != 0 {
 		t.Errorf("Expected 0 actions when no steps defined, got %d", len(actions))
@@ -156,7 +156,7 @@ func TestFindActionsWithDifferentVersions(t *testing.T) {
 		{Uses: "actions/upload-artifact", UsesVersion: "v3"},
 	}
 
-	count := FindActionsWithDifferentVersions(actions1, actions2)
+	_, count, _ := FindActionsWithDifferentVersions(actions1, actions2)
 
 	// Expected: checkout (v3 vs v4) and setup-go (v4 vs v5) = 2 differences
 	if count != 2 {
@@ -175,7 +175,7 @@ func TestFindActionsWithDifferentVersionsNoMatches(t *testing.T) {
 		{Uses: "actions/cache", UsesVersion: "v3"},
 	}
 
-	count := FindActionsWithDifferentVersions(actions1, actions2)
+	_, count, _ := FindActionsWithDifferentVersions(actions1, actions2)
 
 	if count != 0 {
 		t.Errorf("Expected 0 actions with different versions, got %d", count)
@@ -193,7 +193,7 @@ func TestFindActionsWithDifferentVersionsSameVersions(t *testing.T) {
 		{Uses: "actions/setup-node", UsesVersion: "v3"},
 	}
 
-	count := FindActionsWithDifferentVersions(actions1, actions2)
+	_, count, _ := FindActionsWithDifferentVersions(actions1, actions2)
 
 	if count != 0 {
 		t.Errorf("Expected 0 actions with different versions when all match, got %d", count)
@@ -206,7 +206,7 @@ func TestFindActionsWithDifferentVersionsEmptyLists(t *testing.T) {
 		{Uses: "actions/checkout", UsesVersion: "v4"},
 	}
 
-	count := FindActionsWithDifferentVersions(actions1, actions2)
+	_, count, _ := FindActionsWithDifferentVersions(actions1, actions2)
 
 	if count != 0 {
 		t.Errorf("Expected 0 actions with different versions when one list is empty, got %d", count)
@@ -215,16 +215,16 @@ func TestFindActionsWithDifferentVersionsEmptyLists(t *testing.T) {
 
 func TestFindActionsWithDifferentVersionsMultipleSameAction(t *testing.T) {
 	actions1 := []Action{
-		{Uses: "actions/checkout", UsesVersion: "v3"},
-		{Uses: "actions/checkout", UsesVersion: "v3"},
+		{Id: "1-1", Uses: "actions/checkout", UsesVersion: "v3"},
+		{Id: "1-2", Uses: "actions/checkout", UsesVersion: "v3"},
 	}
 
 	actions2 := []Action{
-		{Uses: "actions/checkout", UsesVersion: "v4"},
-		{Uses: "actions/checkout", UsesVersion: "v4"},
+		{Id: "2-1", Uses: "actions/checkout", UsesVersion: "v4"},
+		{Id: "2-2", Uses: "actions/checkout", UsesVersion: "v4"},
 	}
 
-	count := FindActionsWithDifferentVersions(actions1, actions2)
+	_, count, _ := FindActionsWithDifferentVersions(actions1, actions2)
 
 	// Each instance in actions1 matches with each instance in actions2
 	// 2 * 2 = 4 differences
@@ -286,7 +286,7 @@ func TestFindActionsWithSimilarConfigurations(t *testing.T) {
 		actions2[i].GenerateHash()
 	}
 
-	count := FindActionsWithSimilarConfigurations(actions1, actions2)
+	_, count, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
 
 	// Expected: 2 pairs of matching actions with similar configs = 4 total (2 * 2)
 	if count < 2 {
@@ -317,7 +317,7 @@ func TestFindActionsWithSimilarConfigurationsNoMatches(t *testing.T) {
 		actions2[i].GenerateHash()
 	}
 
-	count := FindActionsWithSimilarConfigurations(actions1, actions2)
+	_, count, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
 
 	if count != 0 {
 		t.Errorf("Expected 0 similar configurations when action names differ, got %d", count)
@@ -330,7 +330,7 @@ func TestFindActionsWithSimilarConfigurationsEmptyLists(t *testing.T) {
 		{Uses: "actions/checkout", UsesVersion: "v4"},
 	}
 
-	count := FindActionsWithSimilarConfigurations(actions1, actions2)
+	_, count, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
 
 	if count != 0 {
 		t.Errorf("Expected 0 similar configurations when one list is empty, got %d", count)
@@ -373,7 +373,7 @@ func TestFindActionsWithSimilarConfigurationsDifferentConfigs(t *testing.T) {
 		actions2[i].GenerateHash()
 	}
 
-	count := FindActionsWithSimilarConfigurations(actions1, actions2)
+	_, count, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
 
 	// With significantly different configs, should not count as highly similar
 	if count != 0 {
@@ -404,7 +404,7 @@ func TestFindActionsWithSimilarConfigurationsNoHashes(t *testing.T) {
 
 	// Don't generate hashes - test nil hash handling
 
-	count := FindActionsWithSimilarConfigurations(actions1, actions2)
+	_, count, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
 
 	if count != 0 {
 		t.Errorf("Expected 0 when hashes are not generated, got %d", count)
@@ -414,6 +414,7 @@ func TestFindActionsWithSimilarConfigurationsNoHashes(t *testing.T) {
 func TestFindActionsWithSimilarConfigurationsMultiplePairs(t *testing.T) {
 	actions1 := []Action{
 		{
+			Id:          "1-1",
 			Uses:        "actions/checkout",
 			UsesVersion: "v4",
 			With: map[string]string{
@@ -421,6 +422,7 @@ func TestFindActionsWithSimilarConfigurationsMultiplePairs(t *testing.T) {
 			},
 		},
 		{
+			Id:          "1-2",
 			Uses:        "actions/checkout",
 			UsesVersion: "v3",
 			With: map[string]string{
@@ -431,6 +433,7 @@ func TestFindActionsWithSimilarConfigurationsMultiplePairs(t *testing.T) {
 
 	actions2 := []Action{
 		{
+			Id:          "2-1",
 			Uses:        "actions/checkout",
 			UsesVersion: "v4",
 			With: map[string]string{
@@ -438,6 +441,7 @@ func TestFindActionsWithSimilarConfigurationsMultiplePairs(t *testing.T) {
 			},
 		},
 		{
+			Id:          "2-2",
 			Uses:        "actions/checkout",
 			UsesVersion: "v3",
 			With: map[string]string{
@@ -454,7 +458,7 @@ func TestFindActionsWithSimilarConfigurationsMultiplePairs(t *testing.T) {
 		actions2[i].GenerateHash()
 	}
 
-	count := FindActionsWithSimilarConfigurations(actions1, actions2)
+	_, count, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
 
 	// 2 actions in actions1 × 2 actions in actions2 = 4 comparisons
 	// All should be highly similar, so count should be 8 (2 per similar pair)
@@ -516,51 +520,51 @@ jobs:
 		t.Error("Expected Comparisons map to be initialized")
 	}
 
-	if report.Comparisons["repo1"]["repo2"].StepsWithDifferentVersions != 2 {
-		t.Error("Expected 2 different versions between repo1 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo2"].StepsWithDifferentVersions))
+	if report.Comparisons["repo1"]["repo2"].StepsWithDifferentVersionsCount != 2 {
+		t.Error("Expected 2 different versions between repo1 and repo2, found " + fmt.Sprintf("%v %v", report.Comparisons["repo1"]["repo2"].StepsWithDifferentVersionsCount, report.Comparisons["repo1"]["repo2"].StepsWithDifferentVersions))
 	}
 
-	if report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig != 4 {
-		t.Error("Expected 2 similar configurations between repo1 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig))
+	if report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount != 4 {
+		t.Error("Expected 2 similar configurations between repo1 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount))
 	}
 
-	if report.Comparisons["repo1"]["repo3"].StepsWithDifferentVersions != 0 {
-		t.Error("Expected 2 different versions between repo1 and repo3, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo3"].StepsWithDifferentVersions))
+	if len(report.Comparisons["repo1"]["repo3"].StepsWithDifferentVersions) != 0 {
+		t.Error("Expected 0 different versions between repo1 and repo3, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo3"].StepsWithDifferentVersions))
 	}
 
-	if report.Comparisons["repo1"]["repo3"].StepsWithSimilarConfig != 0 {
+	if len(report.Comparisons["repo1"]["repo3"].StepsWithSimilarConfig) != 0 {
 		t.Error("Expected 0 similar configurations between repo1 and repo3, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo3"].StepsWithSimilarConfig))
 	}
 
-	if report.Comparisons["repo2"]["repo1"].StepsWithDifferentVersions != 2 {
-		t.Error("Expected 2 different versions between repo2 and repo1, found " + fmt.Sprintf("%v", report.Comparisons["repo2"]["repo1"].StepsWithDifferentVersions))
+	if report.Comparisons["repo2"]["repo1"].StepsWithDifferentVersionsCount != 2 {
+		t.Error("Expected 2 different versions between repo2 and repo1, found " + fmt.Sprintf("%v %v", report.Comparisons["repo2"]["repo1"].StepsWithDifferentVersionsCount, report.Comparisons["repo2"]["repo1"].StepsWithDifferentVersions))
 	}
 
-	if report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfig != 4 {
-		t.Error("Expected 2 similar configurations between repo2 and repo1, found " + fmt.Sprintf("%v", report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfig))
+	if report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfigCount != 4 {
+		t.Error("Expected 2 similar configurations between repo2 and repo1, found " + fmt.Sprintf("%v %v", report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfigCount, report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfig))
 	}
 
-	if report.Comparisons["repo2"]["repo3"].StepsWithDifferentVersions != 0 {
-		t.Error("Expected 2 different versions between repo2 and repo3, found " + fmt.Sprintf("%v", report.Comparisons["repo2"]["repo3"].StepsWithDifferentVersions))
+	if len(report.Comparisons["repo2"]["repo3"].StepsWithDifferentVersions) != 0 {
+		t.Error("Expected 0 different versions between repo2 and repo3, found " + fmt.Sprintf("%v", report.Comparisons["repo2"]["repo3"].StepsWithDifferentVersions))
 	}
 
-	if report.Comparisons["repo2"]["repo3"].StepsWithSimilarConfig != 0 {
+	if len(report.Comparisons["repo2"]["repo3"].StepsWithSimilarConfig) != 0 {
 		t.Error("Expected 0 similar configurations between repo2 and repo3, found " + fmt.Sprintf("%v", report.Comparisons["repo2"]["repo3"].StepsWithSimilarConfig))
 	}
 
-	if report.Comparisons["repo3"]["repo1"].StepsWithDifferentVersions != 0 {
-		t.Error("Expected 2 different versions between repo3 and repo1, found " + fmt.Sprintf("%v", report.Comparisons["repo3"]["repo1"].StepsWithDifferentVersions))
+	if len(report.Comparisons["repo3"]["repo1"].StepsWithDifferentVersions) != 0 {
+		t.Error("Expected 0 different versions between repo3 and repo1, found " + fmt.Sprintf("%v", report.Comparisons["repo3"]["repo1"].StepsWithDifferentVersions))
 	}
 
-	if report.Comparisons["repo3"]["repo1"].StepsWithSimilarConfig != 0 {
+	if len(report.Comparisons["repo3"]["repo1"].StepsWithSimilarConfig) != 0 {
 		t.Error("Expected 0 similar configurations between repo3 and repo1, found " + fmt.Sprintf("%v", report.Comparisons["repo3"]["repo1"].StepsWithSimilarConfig))
 	}
 
-	if report.Comparisons["repo3"]["repo2"].StepsWithDifferentVersions != 0 {
-		t.Error("Expected 2 different versions between repo3 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo3"]["repo2"].StepsWithDifferentVersions))
+	if len(report.Comparisons["repo3"]["repo2"].StepsWithDifferentVersions) != 0 {
+		t.Error("Expected 0 different versions between repo3 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo3"]["repo2"].StepsWithDifferentVersions))
 	}
 
-	if report.Comparisons["repo3"]["repo2"].StepsWithSimilarConfig != 0 {
+	if len(report.Comparisons["repo3"]["repo2"].StepsWithSimilarConfig) != 0 {
 		t.Error("Expected 0 similar configurations between repo3 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo3"]["repo2"].StepsWithSimilarConfig))
 	}
 }

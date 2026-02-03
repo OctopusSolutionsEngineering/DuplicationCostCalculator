@@ -25,9 +25,12 @@ type Action struct {
 
 func (action *Action) GenerateHash() {
 	action1Hash := tlsh.New()
+	foundConfig := false
+
 	settingsString := mapToString(action.Settings)
 	if settingsString != "" {
 		_, err := action1Hash.Write([]byte(settingsString))
+		foundConfig = true
 		if err != nil {
 			return
 		}
@@ -36,6 +39,7 @@ func (action *Action) GenerateHash() {
 	envString := mapToString(action.Env)
 	if envString != "" {
 		_, err := action1Hash.Write([]byte(envString))
+		foundConfig = true
 		if err != nil {
 			return
 		}
@@ -44,13 +48,16 @@ func (action *Action) GenerateHash() {
 	withString := mapToString(action.With)
 	if withString != "" {
 		_, err := action1Hash.Write([]byte(withString))
+		foundConfig = true
 		if err != nil {
 			return
 		}
 	}
 
-	action1Hash.Sum(nil)
-	action.hash = action1Hash
+	if foundConfig {
+		action1Hash.Sum(nil)
+		action.hash = action1Hash
+	}
 }
 
 func mapToString(m map[string]string) string {

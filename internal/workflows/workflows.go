@@ -83,11 +83,11 @@ func GenerateReportFromWorkflows(workflows map[string][]string) Report {
 					}
 
 					report.Comparisons[repo2][repo1] = RepoMeasurements{
-						StepsWithDifferentVersions:       lo.Uniq(append(report.Comparisons[repo1][repo2].StepsWithDifferentVersions, diffVersions...)),
-						StepsWithDifferentVersionsCount:  report.Comparisons[repo1][repo2].StepsWithDifferentVersionsCount + diffVersionsCount,
-						StepsWithSimilarConfig:           lo.Uniq(append(report.Comparisons[repo1][repo2].StepsWithSimilarConfig, similarConfigs...)),
-						StepsWithSimilarConfigCount:      report.Comparisons[repo1][repo2].StepsWithSimilarConfigCount + similarConfigsCount,
-						StepsThatIndicateDuplicationRisk: report.Comparisons[repo1][repo2].StepsThatIndicateDuplicationRisk + len(uniqueActions),
+						StepsWithDifferentVersions:       lo.Uniq(append(report.Comparisons[repo2][repo1].StepsWithDifferentVersions, diffVersions...)),
+						StepsWithDifferentVersionsCount:  report.Comparisons[repo2][repo1].StepsWithDifferentVersionsCount + diffVersionsCount,
+						StepsWithSimilarConfig:           lo.Uniq(append(report.Comparisons[repo2][repo1].StepsWithSimilarConfig, similarConfigs...)),
+						StepsWithSimilarConfigCount:      report.Comparisons[repo2][repo1].StepsWithSimilarConfigCount + similarConfigsCount,
+						StepsThatIndicateDuplicationRisk: report.Comparisons[repo2][repo1].StepsThatIndicateDuplicationRisk + len(uniqueActions),
 					}
 				}
 			}
