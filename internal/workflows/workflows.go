@@ -20,18 +20,39 @@ import (
 
 const HighSimilarity = 30
 
+type RepoActions struct {
+	Repo      string
+	Workflows []string
+}
+
 func GenerateReport(client *github.Client, repos []string) Report {
-	workflowsContent := make(map[string][]string)
+	result := make(chan RepoActions)
+	workflowsContent := map[string][]string{}
 
 	for _, repo := range repos {
-		workflowFiles := FindWorkflows(client, repo)
+		// Get the workflows in a goroutine
+		go func(client *github.Client, repo string) {
+			workflows := []string{}
+			workflowFiles := FindWorkflows(client, repo)
 
-		for _, workflowFile := range workflowFiles {
-			workflowStr := WorkflowToString(client, repo, workflowFile)
-			if workflowStr != "" {
-				workflowsContent[repo] = append(workflowsContent[repo], workflowStr)
+			for _, workflowFile := range workflowFiles {
+				workflowStr := WorkflowToString(client, repo, workflowFile)
+				if workflowStr != "" {
+					workflows = append(workflows, workflowFile)
+				}
 			}
-		}
+
+			result <- RepoActions{
+				Repo:      repo,
+				Workflows: workflows,
+			}
+		}(client, repo)
+	}
+
+	// Wait for all the goroutines to finish
+	for i := 0; i < len(repos); i++ {
+		repoActions := <-result
+		workflowsContent[repoActions.Repo] = repoActions.Workflows
 	}
 
 	report := GenerateReportFromWorkflows(workflowsContent)
@@ -194,6 +215,7 @@ func FindWorkflows(client *github.Client, repo string) []string {
 	// List contents of .github/workflows directory
 	_, dirContent, _, err := client.Repositories.GetContents(ctx, owner, repoName, ".github/workflows", nil)
 	if err != nil {
+		println("Error fetching workflows for repo", repo, ":", err)
 		return []string{}
 	}
 
