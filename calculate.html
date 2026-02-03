@@ -175,7 +175,7 @@
 
                     h('div', { className: 'row mb-4' },
                         h('div', { className: 'col-md-6 mb-3' },
-                            h('label', { className: 'form-label fw-bold' }, 'Hours to make a consistent change:'),
+                            h('label', { className: 'form-label fw-bold' }, 'Hours to make a consistent change per repo:'),
                             h('input', {
                                 type: 'number',
                                 className: 'form-control',
@@ -223,7 +223,7 @@
                         `The cost to make a consistent change can be estimated using the formula:`
                     ),
                     h('p', { className: 'mb-4 font-monospace' },
-                        `Repos with duplicate actions or version drift (${results.numberOfReposWithDuplicationOrDrift}) * hours to make a consistent change (${hours}) * average annual salary of an engineer (${salary}) / 365 days / 8 hour workday.`
+                        `Repos with duplicate actions or version drift (${results.numberOfReposWithDuplicationOrDrift}) * hours to make a consistent change per repo (${hours}) * average annual salary of an engineer (${salary}) / 365 days / 8 hour workday.`
                     ),
 
                     h('div', { className: 'alert alert-info mt-4' },
