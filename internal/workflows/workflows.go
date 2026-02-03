@@ -181,7 +181,7 @@ func FindWorkflows(client *github.Client, repo string) []string {
 	// List contents of .github/workflows directory
 	_, dirContent, _, err := client.Repositories.GetContents(ctx, owner, repoName, ".github/workflows", nil)
 	if err != nil {
-		println("Error fetching workflows for repo", repo, ":", err)
+		println("Error fetching workflows for repo", repo, ":", err.Error())
 		return []string{}
 	}
 
