@@ -14,8 +14,21 @@ import (
 
 const HighSimilarity = 30
 
-func GenerateReport(repos []string) Report {
-	return Report{}
+func GenerateReport(jwt string, repos []string) Report {
+	workflowsContent := make(map[string][]string)
+
+	for _, repo := range repos {
+		workflowFiles := FindWorkflows(jwt, repo)
+
+		for _, workflowFile := range workflowFiles {
+			workflowStr := WorkflowToString(jwt, repo, workflowFile)
+			if workflowStr != "" {
+				workflowsContent[repo] = append(workflowsContent[repo], workflowStr)
+			}
+		}
+	}
+
+	return GenerateReportFromWorkflows(workflowsContent)
 }
 
 func GenerateReportFromWorkflows(workflows map[string][]string) Report {
