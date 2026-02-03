@@ -9,8 +9,9 @@ type Report struct {
 }
 
 type RepoMeasurements struct {
-	StepsWithDifferentVersions      []string `json:"stepsWithDifferentVersions"`
-	StepsWithDifferentVersionsCount int      `json:"stepsWithDifferentVersionsCount"`
-	StepsWithSimilarConfig          []string `json:"stepsWithSimilarConfig"`
-	StepsWithSimilarConfigCount     int      `json:"stepsWithSimilarConfigCount"`
+	StepsWithDifferentVersions       []string `json:"stepsWithDifferentVersions"`
+	StepsWithDifferentVersionsCount  int      `json:"stepsWithDifferentVersionsCount"`
+	StepsWithSimilarConfig           []string `json:"stepsWithSimilarConfig"`
+	StepsWithSimilarConfigCount      int      `json:"stepsWithSimilarConfigCount"`
+	StepsThatIndicateDuplicationRisk int      `json:"stepsThatIndicateDuplicationRisk"`
 }

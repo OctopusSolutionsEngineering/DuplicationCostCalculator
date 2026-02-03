@@ -8,6 +8,7 @@ import (
 )
 
 type Action struct {
+	Id string `json:"id"`
 	// Uses is the identifier of the GitHub Action. This does not include the version. For example: "actions/checkout".
 	Uses string `json:"uses"`
 	// UsesVersion is the version of the GitHub Action.

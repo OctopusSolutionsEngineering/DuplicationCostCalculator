@@ -23,6 +23,7 @@ func main() {
 		println(sourceRepo)
 		for repoName, measurements := range comparasion {
 			println("  ", repoName)
+			println("    Steps that indicate duplication risk:", measurements.StepsThatIndicateDuplicationRisk)
 			println("    Steps with different versions:", measurements.StepsWithDifferentVersionsCount, strings.Join(measurements.StepsWithDifferentVersions, ", "))
 			println("    Steps with similar config:", measurements.StepsWithSimilarConfigCount, strings.Join(measurements.StepsWithSimilarConfig, ", "))
 		}

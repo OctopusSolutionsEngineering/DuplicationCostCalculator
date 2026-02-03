@@ -13,6 +13,7 @@ import (
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v57/github"
+	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
 )
 
@@ -56,8 +57,14 @@ func GenerateReportFromWorkflows(workflows map[string][]string) Report {
 
 			for _, actions1 := range actionsList1 {
 				for _, actions2 := range actionsList2 {
-					diffVersionsCount, diffVersions := FindActionsWithDifferentVersions(actions1, actions2)
-					similarConfigsCount, similarConfigs := FindActionsWithSimilarConfigurations(actions1, actions2)
+					diffVersionsActions, diffVersionsCount, diffVersions := FindActionsWithDifferentVersions(actions1, actions2)
+					similarConfigsActions, similarConfigsCount, similarConfigs := FindActionsWithSimilarConfigurations(actions1, actions2)
+
+					allActionsIds := lo.Map(append(diffVersionsActions, similarConfigsActions...), func(item Action, index int) string {
+						return item.Id
+					})
+
+					uniqueActions := lo.Uniq(allActionsIds)
 
 					if _, ok := report.Comparisons[repo1]; !ok {
 						report.Comparisons[repo1] = make(map[string]RepoMeasurements)
@@ -68,17 +75,19 @@ func GenerateReportFromWorkflows(workflows map[string][]string) Report {
 					}
 
 					report.Comparisons[repo1][repo2] = RepoMeasurements{
-						StepsWithDifferentVersions:      diffVersions,
-						StepsWithDifferentVersionsCount: diffVersionsCount,
-						StepsWithSimilarConfig:          similarConfigs,
-						StepsWithSimilarConfigCount:     similarConfigsCount,
+						StepsWithDifferentVersions:       diffVersions,
+						StepsWithDifferentVersionsCount:  diffVersionsCount,
+						StepsWithSimilarConfig:           similarConfigs,
+						StepsWithSimilarConfigCount:      similarConfigsCount,
+						StepsThatIndicateDuplicationRisk: len(uniqueActions),
 					}
 
 					report.Comparisons[repo2][repo1] = RepoMeasurements{
-						StepsWithDifferentVersions:      diffVersions,
-						StepsWithDifferentVersionsCount: diffVersionsCount,
-						StepsWithSimilarConfig:          similarConfigs,
-						StepsWithSimilarConfigCount:     similarConfigsCount,
+						StepsWithDifferentVersions:       diffVersions,
+						StepsWithDifferentVersionsCount:  diffVersionsCount,
+						StepsWithSimilarConfig:           similarConfigs,
+						StepsWithSimilarConfigCount:      similarConfigsCount,
+						StepsThatIndicateDuplicationRisk: len(uniqueActions),
 					}
 				}
 			}
@@ -91,9 +100,11 @@ func GenerateReportFromWorkflows(workflows map[string][]string) Report {
 func convertWorkflowToActionsMap(workflows map[string][]string) map[string][][]Action {
 	repoActions := make(map[string][][]Action)
 
+	workflowId := 0
 	for repo, workflowFiles := range workflows {
 		for _, workflowFile := range workflowFiles {
-			actions := ParseWorkflow(workflowFile)
+			workflowId++
+			actions := ParseWorkflow(workflowFile, workflowId)
 			repoActions[repo] = append(repoActions[repo], actions)
 		}
 	}
@@ -246,7 +257,7 @@ func FindContributorsToWorkflow(client *github.Client, repo string, workflow str
 
 // ParseWorkflow parses the string representation of a GitHub Actions workflow
 // and returns a slice of Action structs representing the actions used in the workflow.
-func ParseWorkflow(workflow string) []Action {
+func ParseWorkflow(workflow string, workflowId int) []Action {
 	var workflowMap map[string]interface{}
 
 	err := yaml.Unmarshal([]byte(workflow), &workflowMap)
@@ -273,6 +284,8 @@ func ParseWorkflow(workflow string) []Action {
 
 	var actions []Action
 
+	actionId := 1
+
 	// Iterate through jobs and parse actions
 	for _, key := range keys {
 		jobMap, ok := jobsMap[key].(map[string]interface{})
@@ -292,6 +305,8 @@ func ParseWorkflow(workflow string) []Action {
 		}
 
 		for _, stepInterface := range stepsSlice {
+			actionId++
+
 			stepMap, ok := stepInterface.(map[string]interface{})
 			if !ok {
 				continue
@@ -323,6 +338,7 @@ func ParseWorkflow(workflow string) []Action {
 			settings := getOtherValues(stepMap, []string{"uses", "env", "with"})
 
 			action := Action{
+				Id:          fmt.Sprintf("%d-%d", workflowId, actionId),
 				Uses:        actionName,
 				UsesVersion: actionVersion,
 				Settings:    settings,
@@ -379,7 +395,8 @@ func convertStringMap(input map[string]interface{}) map[string]string {
 	return result
 }
 
-func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) (int, []string) {
+func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) ([]Action, int, []string) {
+	actions := []Action{}
 	count := 0
 	result := []string{}
 
@@ -388,6 +405,9 @@ func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) (int
 
 			if action1.Uses == action2.Uses && action1.UsesVersion != action2.UsesVersion {
 				count += 2
+				actions = append(actions, action1)
+				actions = append(actions, action2)
+
 				if !slices.Contains(result, action1.Uses) {
 					result = append(result, action1.Uses)
 				}
@@ -395,11 +415,12 @@ func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) (int
 		}
 	}
 
-	return count, result
+	return actions, count, result
 }
 
-func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) (int, []string) {
+func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) ([]Action, int, []string) {
 
+	actions := []Action{}
 	result := []string{}
 	count := 0
 
@@ -411,6 +432,9 @@ func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) 
 
 					if distance <= HighSimilarity {
 						count += 2
+
+						actions = append(actions, action1)
+						actions = append(actions, action2)
 
 						uses := action1.Uses
 						if uses == "" {
@@ -426,5 +450,5 @@ func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) 
 		}
 	}
 
-	return count, result
+	return actions, count, result
 }
