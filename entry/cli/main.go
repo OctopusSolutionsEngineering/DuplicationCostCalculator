@@ -21,7 +21,7 @@ func main() {
 	report := workflows.GenerateReport(githubClient, args[1:])
 
 	for sourceRepo, comparison := range report.Comparisons {
-		println(sourceRepo, "Contributors:", len(report.Contributors[sourceRepo]))
+		println(sourceRepo, "Advisories:", len(report.WorkflowAdvisories[sourceRepo]), "Contributors:", len(report.Contributors[sourceRepo]))
 		for repoName, measurements := range comparison {
 			println("  ", repoName)
 			println("    Steps that indicate duplication risk:", measurements.StepsThatIndicateDuplicationRisk)

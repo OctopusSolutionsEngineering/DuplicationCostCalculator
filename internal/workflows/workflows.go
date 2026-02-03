@@ -15,21 +15,24 @@ import (
 const HighSimilarity = 30
 
 type RepoActions struct {
-	Repo         string
-	Workflows    []string
-	Contributors []string
+	Repo               string
+	Workflows          []string
+	Contributors       []string
+	WorkflowAdvisories []string
 }
 
 func GenerateReport(client *github.Client, repos []string) Report {
 	result := make(chan RepoActions)
 	workflowsContent := map[string][]string{}
 	workflowsContributors := map[string][]string{}
+	repoAdvisories := map[string][]string{}
 
 	for _, repo := range repos {
 		// Get the workflows in a goroutine
 		go func(client *github.Client, repo string) {
 			workflows := []string{}
 			contributors := []string{}
+			advisories := GetWorkflowAdvisories(client, repo)
 			workflowFiles := FindWorkflows(client, repo)
 
 			for _, workflowFile := range workflowFiles {
@@ -41,9 +44,10 @@ func GenerateReport(client *github.Client, repos []string) Report {
 			}
 
 			result <- RepoActions{
-				Repo:         repo,
-				Workflows:    workflows,
-				Contributors: contributors,
+				Repo:               repo,
+				Workflows:          workflows,
+				Contributors:       contributors,
+				WorkflowAdvisories: advisories,
 			}
 		}(client, repo)
 	}
@@ -53,14 +57,15 @@ func GenerateReport(client *github.Client, repos []string) Report {
 		repoActions := <-result
 		workflowsContent[repoActions.Repo] = repoActions.Workflows
 		workflowsContributors[repoActions.Repo] = repoActions.Contributors
+		repoAdvisories[repoActions.Repo] = repoActions.WorkflowAdvisories
 	}
 
-	report := GenerateReportFromWorkflows(workflowsContent, workflowsContributors)
+	report := GenerateReportFromWorkflows(workflowsContent, workflowsContributors, repoAdvisories)
 
 	return report
 }
 
-func GenerateReportFromWorkflows(workflows map[string][]string, contributors map[string][]string) Report {
+func GenerateReportFromWorkflows(workflows map[string][]string, contributors map[string][]string, repoAdvisories map[string][]string) Report {
 
 	repoActions := convertWorkflowToActionsMap(workflows)
 
@@ -68,14 +73,16 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 	sortedRepoNames := slices.Sorted(repoNames)
 
 	report := Report{
-		Comparisons:   map[string]map[string]RepoMeasurements{},
-		Contributors:  map[string][]string{},
-		NumberOfRepos: len(sortedRepoNames),
+		Comparisons:        map[string]map[string]RepoMeasurements{},
+		Contributors:       map[string][]string{},
+		WorkflowAdvisories: map[string][]string{},
+		NumberOfRepos:      len(sortedRepoNames),
 	}
 
 	for i := 0; i < len(sortedRepoNames); i++ {
 		repo1 := sortedRepoNames[i]
 		report.Contributors[repo1] = contributors[repo1]
+		report.WorkflowAdvisories[repo1] = repoAdvisories[repo1]
 
 		for j := i + 1; j < len(sortedRepoNames); j++ {
 
@@ -166,12 +173,10 @@ func convertWorkflowToActionsMap(workflows map[string][]string) map[string][][]A
 func FindWorkflows(client *github.Client, repo string) []string {
 	ctx := context.Background()
 
-	// Split repo into owner and name
-	parts := strings.Split(strings.Replace(repo, "https://github.com/", "", 1), "/")
-	if len(parts) != 2 {
+	owner, repoName, err := splitRepo(repo)
+	if err != nil {
 		return []string{}
 	}
-	owner, repoName := parts[0], parts[1]
 
 	// List contents of .github/workflows directory
 	_, dirContent, _, err := client.Repositories.GetContents(ctx, owner, repoName, ".github/workflows", nil)
@@ -476,4 +481,58 @@ func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) 
 	}
 
 	return actions, count, result
+}
+
+func GetWorkflowAdvisories(client *github.Client, repo string) []string {
+	ctx := context.Background()
+
+	owner, repoName, err := splitRepo(repo)
+	if err != nil {
+		return []string{}
+	}
+
+	opts := &github.ListRepositorySecurityAdvisoriesOptions{
+		ListCursorOptions: github.ListCursorOptions{
+			PerPage: 100,
+		},
+	}
+
+	var advisories []string
+
+	// Fetch all security advisories for the repository (handle pagination)
+	for {
+		advisoryList, resp, err := client.SecurityAdvisories.ListRepositorySecurityAdvisories(ctx, owner, repoName, opts)
+		if err != nil {
+			// If there's an error (e.g., no access, repo doesn't exist), return empty list
+			return []string{}
+		}
+
+		// Extract advisory IDs or summaries
+		for _, advisory := range advisoryList {
+			if advisory.GHSAID != nil {
+				advisories = append(advisories, *advisory.GHSAID)
+			}
+		}
+
+		// Check if there are more pages
+		if resp.After == "" {
+			break
+		}
+		opts.After = resp.After
+	}
+
+	if advisories == nil {
+		return []string{}
+	}
+
+	return advisories
+}
+
+func splitRepo(repo string) (string, string, error) {
+	// Split repo into owner and name
+	parts := strings.Split(strings.Replace(repo, "https://github.com/", "", 1), "/")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid repository format: %s", repo)
+	}
+	return parts[0], parts[1], nil
 }
