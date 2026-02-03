@@ -124,7 +124,9 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 	}
 
 	numberOfReposWithDuplicationOrDrift := 0
+	totalContributors := []string{}
 	for _, repo := range sortedRepoNames {
+		totalContributors = append(totalContributors, report.Contributors[repo]...)
 		foundDuplicationOrDrift := false
 		for _, measurements := range report.Comparisons[repo] {
 			if measurements.StepsThatIndicateDuplicationRisk > 0 {
@@ -138,6 +140,7 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 	}
 
 	report.NumberOfReposWithDuplicationOrDrift = numberOfReposWithDuplicationOrDrift
+	report.UniqueContributors = lo.Uniq(totalContributors)
 
 	return report
 }

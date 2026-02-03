@@ -5,6 +5,7 @@ type Report struct {
 	NumberOfReposWithDuplicationOrDrift int                                    `json:"numberOfReposWithDuplicationOrDrift"`
 	Comparisons                         map[string]map[string]RepoMeasurements `json:"comparisons"`
 	Contributors                        map[string][]string                    `json:"contributors"`
+	UniqueContributors                  []string                               `json:"uniqueContributors"`
 }
 
 type RepoMeasurements struct {

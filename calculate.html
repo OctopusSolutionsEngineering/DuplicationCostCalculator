@@ -215,7 +215,7 @@
                         h('li', null, 'Committing the change to the initial workflow'),
                         h('li', null, 'Identifying additional workflows that may have duplicate actions or actions with older versions configured, and then:'),
                         h('ul', null,
-                            h('li', null, 'Finding the owner of the additional workflows'),
+                            h('li', null, `Finding the owner of the additional workflows from the ${results.uniqueContributors.length} unique contributor${results.uniqueContributors.length !== 1 ? 's' : ''} across the scanned repositories`),
                             h('li', null, 'Editing, committing, testing, reviewing, and merging the changes to the additional workflow files')
                         ),
                     ),
