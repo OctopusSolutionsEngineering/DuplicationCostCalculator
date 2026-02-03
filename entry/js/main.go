@@ -24,5 +24,4 @@ func findWorkflows(this js.Value, args []js.Value) interface{} {
 	jwt := args[0].String()
 	repo := args[0].String()
 
-	return js.ValueOf(workflows.FindWorkflows(repo, jwt))
 }

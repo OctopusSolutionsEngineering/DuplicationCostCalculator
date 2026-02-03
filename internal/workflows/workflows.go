@@ -3,25 +3,29 @@ package workflows
 import (
 	"context"
 	"fmt"
+	"log"
 	"maps"
+	"net/http"
+	"os"
 	"slices"
+	"strconv"
 	"strings"
 
+	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v57/github"
-	"golang.org/x/oauth2"
 	"gopkg.in/yaml.v3"
 )
 
 const HighSimilarity = 30
 
-func GenerateReport(jwt string, repos []string) Report {
+func GenerateReport(client *github.Client, repos []string) Report {
 	workflowsContent := make(map[string][]string)
 
 	for _, repo := range repos {
-		workflowFiles := FindWorkflows(jwt, repo)
+		workflowFiles := FindWorkflows(client, repo)
 
 		for _, workflowFile := range workflowFiles {
-			workflowStr := WorkflowToString(jwt, repo, workflowFile)
+			workflowStr := WorkflowToString(client, repo, workflowFile)
 			if workflowStr != "" {
 				workflowsContent[repo] = append(workflowsContent[repo], workflowStr)
 			}
@@ -72,16 +76,6 @@ func GenerateReportFromWorkflows(workflows map[string][]string) Report {
 						StepsWithDifferentVersions: diffVersions,
 						StepsWithSimilarConfig:     similarConfigs,
 					}
-
-					if diffVersions > 0 || similarConfigs > 0 {
-						fmt.Printf("Comparison between %s and %s:\n", repo1, repo2)
-						if diffVersions > 0 {
-							fmt.Printf("  Steps with different versions: %d\n", diffVersions)
-						}
-						if similarConfigs > 0 {
-							fmt.Printf("  Steps with similar configurations: %d\n", similarConfigs)
-						}
-					}
 				}
 			}
 		}
@@ -94,16 +88,8 @@ func convertWorkflowToActionsMap(workflows map[string][]string) map[string][][]A
 	repoActions := make(map[string][][]Action)
 
 	for repo, workflowFiles := range workflows {
-		fmt.Printf("Repo: %s\n", repo)
 		for _, workflowFile := range workflowFiles {
-			fmt.Printf("  Workflow: %s\n", workflowFile)
-
 			actions := ParseWorkflow(workflowFile)
-
-			for _, action := range actions {
-				fmt.Printf("    Action: %s@%s\n", action.Uses, action.UsesVersion)
-			}
-
 			repoActions[repo] = append(repoActions[repo], actions)
 		}
 	}
@@ -111,28 +97,45 @@ func convertWorkflowToActionsMap(workflows map[string][]string) map[string][][]A
 	return repoActions
 }
 
-func getClient(jwt string) (context.Context, *github.Client) {
-	ctx := context.Background()
+func GetClientLocal() *github.Client {
 
-	// Create OAuth2 token source
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: jwt},
-	)
-	tc := oauth2.NewClient(ctx, ts)
+	// Load environment variables for security
+	appIDStr := os.Getenv("GITHUB_APP_ID")
+	installationIDStr := os.Getenv("GITHUB_INSTALLATION_ID")
+	privateKeyPath := os.Getenv("GITHUB_PRIVATE_KEY_PATH")
+
+	appID := mustParseInt64(appIDStr)
+	installationID := mustParseInt64(installationIDStr)
+
+	// Create an http.RoundTripper that signs requests as a GitHub App installation
+	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, appID, installationID, privateKeyPath)
+	if err != nil {
+		log.Fatalf("Error creating ghinstallation transport: %v", err)
+	}
+
+	// Create the GitHub client with the authenticated transport
+	client := github.NewClient(&http.Client{Transport: itr})
 
 	// Create GitHub client
-	return ctx, github.NewClient(tc)
+	return client
+}
+
+func mustParseInt64(s string) int64 {
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		log.Fatalf("Invalid integer: %s", s)
+	}
+	return i
 }
 
 // FindWorkflows loads all the GitHub Actions workflows for a given repository.
 // jwt is the JSON Web Token used for authentication.
 // repo is the repository in the format "owner/repo".
-func FindWorkflows(jwt string, repo string) []string {
-	// Create GitHub client
-	ctx, client := getClient(jwt)
+func FindWorkflows(client *github.Client, repo string) []string {
+	ctx := context.Background()
 
 	// Split repo into owner and name
-	parts := strings.Split(repo, "/")
+	parts := strings.Split(strings.Replace(repo, "https://github.com/", "", 1), "/")
 	if len(parts) != 2 {
 		return []string{}
 	}
@@ -159,9 +162,8 @@ func FindWorkflows(jwt string, repo string) []string {
 	return workflows
 }
 
-func WorkflowToString(jwt string, repo string, workflow string) string {
-	// Create GitHub client
-	ctx, client := getClient(jwt)
+func WorkflowToString(client *github.Client, repo string, workflow string) string {
+	ctx := context.Background()
 
 	// Split repo into owner and name
 	parts := strings.Split(repo, "/")
@@ -171,7 +173,7 @@ func WorkflowToString(jwt string, repo string, workflow string) string {
 	owner, repoName := parts[0], parts[1]
 
 	// Get file content
-	fileContent, _, _, err := client.Repositories.GetContents(ctx, owner, repoName, workflow, nil)
+	fileContent, _, _, err := client.Repositories.GetContents(ctx, owner, repoName, ".github/workflows/"+workflow, nil)
 	if err != nil {
 		return ""
 	}
@@ -185,9 +187,8 @@ func WorkflowToString(jwt string, repo string, workflow string) string {
 	return contentStr
 }
 
-func FindContributorsToWorkflow(jwt string, repo string, workflow string) []string {
-	// Create GitHub client
-	ctx, client := getClient(jwt)
+func FindContributorsToWorkflow(client *github.Client, repo string, workflow string) []string {
+	ctx := context.Background()
 
 	// Split repo into owner and name
 	parts := strings.Split(repo, "/")
