@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/client"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/workflows"
 )
 
@@ -15,9 +16,9 @@ func main() {
 		return
 	}
 
-	client := workflows.GetClientLocal()
+	githubClient := client.GetClientLocal()
 
-	report := workflows.GenerateReport(client, args[1:])
+	report := workflows.GenerateReport(githubClient, args[1:])
 
 	for sourceRepo, comparison := range report.Comparisons {
 		println(sourceRepo, "Contributors:", len(report.Contributors[sourceRepo]))
