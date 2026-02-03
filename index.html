@@ -1,5 +1,51 @@
 <html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Login</title>
+</head>
 <body>
+    <div id="app"></div>
 
+    <script type="module">
+        import { h, render, Component } from 'https://esm.sh/preact';
+        import { useState } from 'https://esm.sh/preact/hooks';
+
+        function App() {
+            const [isLoading, setIsLoading] = useState(false);
+
+            const handleLogin = () => {
+                setIsLoading(true);
+
+                // Replace with your GitHub OAuth App credentials
+                const clientId = 'Iv23liJtGEKxmrX20YUl';
+                const redirectUri = encodeURIComponent(window.location.origin + '/callback');
+                const scope = 'workflow';
+
+                // Redirect to GitHub OAuth authorization
+                window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+            };
+
+            return h('div', { style: { textAlign: 'center', marginTop: '50px' } },
+                h('h1', null, 'Duplication Cost Calculator'),
+                h('button', {
+                    onClick: handleLogin,
+                    disabled: isLoading,
+                    style: {
+                        padding: '12px 24px',
+                        fontSize: '16px',
+                        backgroundColor: '#24292e',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: isLoading ? 'not-allowed' : 'pointer',
+                        opacity: isLoading ? 0.6 : 1
+                    }
+                }, isLoading ? 'Logging in...' : 'Login with GitHub')
+            );
+        }
+
+        render(h(App), document.getElementById('app'));
+    </script>
 </body>
 </html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculate Duplication Cost</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="app"></div>
+
+    <script type="module">
+        import { h, render } from 'https://esm.sh/preact';
+        import { useState } from 'https://esm.sh/preact/hooks';
+
+        function CalculatePage() {
+            const [repositories, setRepositories] = useState([
+                "OctopusSolutionsEngineering/OctopusTerraformExport",
+                "OctopusSolutionsEngineering/OctopusRecommendationEngine",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+            ]);
+            const [isLoading, setIsLoading] = useState(false);
+            const [error, setError] = useState('');
+
+            const handleInputChange = (index, value) => {
+                const newRepos = [...repositories];
+                newRepos[index] = value;
+                setRepositories(newRepos);
+            };
+
+            const handleCalculate = async () => {
+                setIsLoading(true);
+                setError('');
+
+                try {
+                    const response = await fetch('/cost', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            repositories: repositories.filter(repo => repo.trim() !== '')
+                        }),
+                        credentials: 'include' // Include cookies
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to calculate cost');
+                    }
+
+                    const result = await response.json();
+                    console.log('Result:', result);
+                    // Handle the result as needed
+
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            return h('div', { className: 'container mt-5' },
+                h('div', { className: 'row justify-content-center' },
+                    h('div', { className: 'col-md-8' },
+                        h('h1', { className: 'mb-4' }, 'Git Repositories'),
+
+                        error && h('div', { className: 'alert alert-danger' }, error),
+
+                        h('div', { className: 'mb-3' },
+                            repositories.map((repo, index) =>
+                                h('div', { className: 'mb-3', key: index },
+                                    h('input', {
+                                        type: 'text',
+                                        className: 'form-control',
+                                        placeholder: `Repository (e.g., owner/repo)`,
+                                        value: repo,
+                                        onChange: (e) => handleInputChange(index, e.target.value),
+                                        disabled: isLoading
+                                    })
+                                )
+                            )
+                        ),
+
+                        h('button', {
+                            className: 'btn btn-primary btn-lg w-100',
+                            onClick: handleCalculate,
+                            disabled: isLoading
+                        }, isLoading ? 'Calculating...' : 'Calculate')
+                    )
+                )
+            );
+        }
+
+        render(h(CalculatePage), document.getElementById('app'));
+    </script>
+</body>
+</html>
