@@ -13,13 +13,15 @@ func CostHandler(c *gin.Context) {
 
 	if !client.UsePrivateKeyAuth() {
 		// Extract access token from cookie
-		accessToken, err := c.Cookie("github_token")
-		if err != nil || accessToken == "" {
+		token, err := c.Cookie("github_token")
+		if err != nil || token == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Unauthorized - no access token found",
 			})
 			return
 		}
+
+		accessToken = token
 	}
 
 	// Parse request body
