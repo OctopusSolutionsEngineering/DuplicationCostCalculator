@@ -38,7 +38,7 @@ func GenerateReport(client *github.Client, repos []string) Report {
 			for _, workflowFile := range workflowFiles {
 				workflowStr := WorkflowToString(client, repo, workflowFile)
 				if workflowStr != "" {
-					workflows = append(workflows, workflowFile)
+					workflows = append(workflows, workflowStr)
 				}
 			}
 
