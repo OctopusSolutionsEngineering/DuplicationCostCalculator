@@ -520,51 +520,51 @@ jobs:
 		t.Error("Expected Comparisons map to be initialized")
 	}
 
-	if report.Comparisons["repo1"]["repo2"].StepsWithDifferentVersionsCount != 2 {
+	if report.Comparisons["repo1"]["repo2"].StepsWithDifferentVersionsCount != 2 || len(report.Comparisons["repo1"]["repo2"].StepsWithDifferentVersions) != 1 {
 		t.Error("Expected 2 different versions between repo1 and repo2, found " + fmt.Sprintf("%v %v", report.Comparisons["repo1"]["repo2"].StepsWithDifferentVersionsCount, report.Comparisons["repo1"]["repo2"].StepsWithDifferentVersions))
 	}
 
-	if report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount != 4 {
+	if report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount != 4 || len(report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig) != 2 {
 		t.Error("Expected 4 similar configurations between repo1 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount))
 	}
 
-	if len(report.Comparisons["repo1"]["repo3"].StepsWithDifferentVersions) != 0 {
+	if len(report.Comparisons["repo1"]["repo3"].StepsWithDifferentVersions) != 0 || report.Comparisons["repo1"]["repo3"].StepsWithDifferentVersionsCount != 0 {
 		t.Error("Expected 0 different versions between repo1 and repo3, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo3"].StepsWithDifferentVersions))
 	}
 
-	if len(report.Comparisons["repo1"]["repo3"].StepsWithSimilarConfig) != 0 {
+	if len(report.Comparisons["repo1"]["repo3"].StepsWithSimilarConfig) != 0 || report.Comparisons["repo1"]["repo3"].StepsWithSimilarConfigCount != 0 {
 		t.Error("Expected 0 similar configurations between repo1 and repo3, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo3"].StepsWithSimilarConfig))
 	}
 
-	if report.Comparisons["repo2"]["repo1"].StepsWithDifferentVersionsCount != 2 {
+	if report.Comparisons["repo2"]["repo1"].StepsWithDifferentVersionsCount != 2 || len(report.Comparisons["repo2"]["repo1"].StepsWithDifferentVersions) != 1 {
 		t.Error("Expected 2 different versions between repo2 and repo1, found " + fmt.Sprintf("%v %v", report.Comparisons["repo2"]["repo1"].StepsWithDifferentVersionsCount, report.Comparisons["repo2"]["repo1"].StepsWithDifferentVersions))
 	}
 
-	if report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfigCount != 4 {
+	if report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfigCount != 4 || len(report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfig) != 2 {
 		t.Error("Expected 4 similar configurations between repo2 and repo1, found " + fmt.Sprintf("%v %v", report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfigCount, report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfig))
 	}
 
-	if len(report.Comparisons["repo2"]["repo3"].StepsWithDifferentVersions) != 0 {
+	if len(report.Comparisons["repo2"]["repo3"].StepsWithDifferentVersions) != 0 || report.Comparisons["repo2"]["repo3"].StepsWithDifferentVersionsCount != 0 {
 		t.Error("Expected 0 different versions between repo2 and repo3, found " + fmt.Sprintf("%v", report.Comparisons["repo2"]["repo3"].StepsWithDifferentVersions))
 	}
 
-	if len(report.Comparisons["repo2"]["repo3"].StepsWithSimilarConfig) != 0 {
+	if len(report.Comparisons["repo2"]["repo3"].StepsWithSimilarConfig) != 0 || report.Comparisons["repo2"]["repo3"].StepsWithSimilarConfigCount != 0 {
 		t.Error("Expected 0 similar configurations between repo2 and repo3, found " + fmt.Sprintf("%v", report.Comparisons["repo2"]["repo3"].StepsWithSimilarConfig))
 	}
 
-	if len(report.Comparisons["repo3"]["repo1"].StepsWithDifferentVersions) != 0 {
+	if len(report.Comparisons["repo3"]["repo1"].StepsWithDifferentVersions) != 0 || report.Comparisons["repo3"]["repo1"].StepsWithDifferentVersionsCount != 0 {
 		t.Error("Expected 0 different versions between repo3 and repo1, found " + fmt.Sprintf("%v", report.Comparisons["repo3"]["repo1"].StepsWithDifferentVersions))
 	}
 
-	if len(report.Comparisons["repo3"]["repo1"].StepsWithSimilarConfig) != 0 {
+	if len(report.Comparisons["repo3"]["repo1"].StepsWithSimilarConfig) != 0 || report.Comparisons["repo3"]["repo1"].StepsWithSimilarConfigCount != 0 {
 		t.Error("Expected 0 similar configurations between repo3 and repo1, found " + fmt.Sprintf("%v", report.Comparisons["repo3"]["repo1"].StepsWithSimilarConfig))
 	}
 
-	if len(report.Comparisons["repo3"]["repo2"].StepsWithDifferentVersions) != 0 {
+	if len(report.Comparisons["repo3"]["repo2"].StepsWithDifferentVersions) != 0 || report.Comparisons["repo3"]["repo2"].StepsWithDifferentVersionsCount != 0 {
 		t.Error("Expected 0 different versions between repo3 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo3"]["repo2"].StepsWithDifferentVersions))
 	}
 
-	if len(report.Comparisons["repo3"]["repo2"].StepsWithSimilarConfig) != 0 {
+	if len(report.Comparisons["repo3"]["repo2"].StepsWithSimilarConfig) != 0 || report.Comparisons["repo3"]["repo2"].StepsWithSimilarConfigCount != 0 {
 		t.Error("Expected 0 similar configurations between repo3 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo3"]["repo2"].StepsWithSimilarConfig))
 	}
 }
