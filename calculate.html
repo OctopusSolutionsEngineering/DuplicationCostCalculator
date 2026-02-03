@@ -231,6 +231,7 @@
                 h('div', { className: 'row justify-content-center' },
                     h('div', { className: 'col-md-8' },
                         h('h1', { className: 'mb-4' }, 'Git Repositories'),
+                        h('p', null, 'Enter the GitHub repositories you want to analyze for workflow duplication and version drift. Use the format "owner/repo".'),
 
                         error && h('div', { className: 'alert alert-danger' }, error),
 
