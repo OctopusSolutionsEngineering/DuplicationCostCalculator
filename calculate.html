@@ -163,55 +163,51 @@
                                 })()
                             ),
 
-                    h('div', { className: 'card' },
-                        h('div', { className: 'card-body' },
-                            h('p', { className: 'mb-3' },
-                                'A "consistent change" implies that any change to an action (such as a version or configuration change) in a GitHub Workflow is replicated consistently in all other workflows that implement similar actions.'
-                            ),
-                            h('p', { className: 'mb-3' },
-                                'This includes:'
-                            ),
-                            h('ul', { className: 'mb-4' },
-                                h('li', null, 'Committing the change to the initial workflow'),
-                                h('li', null, 'Identifying additional workflows that may have similar actions configured'),
-                                h('li', null, 'Finding the owner of the additional workflows'),
-                                h('li', null, 'Editing, committing, testing, reviewing, and merging the changes to the additional workflow files'),
-                            ),
-                            h('p', { className: 'mb-4' },
-                                `The cost to make a consistent change can be estimated using the formula: repos with duplicate actions or version drift (${results.numberOfReposWithDuplicationOrDrift}) * hours to make a consistent change (${hours}) * average annual salary of an engineer (${salary}) / 365 days / 8 hour workday.`
-                            ),
+                    h('p', { className: 'mb-3 mt-4' },
+                        'A "consistent change" implies that any change to an action (such as a version or configuration change) in a GitHub Workflow is replicated consistently in all other workflows that implement similar actions.'
+                    ),
+                    h('p', { className: 'mb-3' },
+                        'This includes:'
+                    ),
+                    h('ul', { className: 'mb-4' },
+                        h('li', null, 'Committing the change to the initial workflow'),
+                        h('li', null, 'Identifying additional workflows that may have similar actions configured'),
+                        h('li', null, 'Finding the owner of the additional workflows'),
+                        h('li', null, 'Editing, committing, testing, reviewing, and merging the changes to the additional workflow files'),
+                    ),
+                    h('p', { className: 'mb-4' },
+                        `The cost to make a consistent change can be estimated using the formula: repos with duplicate actions or version drift (${results.numberOfReposWithDuplicationOrDrift}) * hours to make a consistent change (${hours}) * average annual salary of an engineer (${salary}) / 365 days / 8 hour workday.`
+                    ),
 
-                            h('div', { className: 'row mb-4' },
-                                h('div', { className: 'col-md-6 mb-3' },
-                                    h('label', { className: 'form-label fw-bold' }, 'Hours to make a consistent change:'),
-                                    h('input', {
-                                        type: 'number',
-                                        className: 'form-control',
-                                        value: hours,
-                                        onChange: (e) => setHours(Number(e.target.value) || 0),
-                                        min: 0,
-                                        step: 0.5
-                                    })
-                                ),
-                                h('div', { className: 'col-md-6 mb-3' },
-                                    h('label', { className: 'form-label fw-bold' }, 'Average annual salary of an engineer:'),
-                                    h('input', {
-                                        type: 'number',
-                                        className: 'form-control',
-                                        value: salary,
-                                        onChange: (e) => setSalary(Number(e.target.value) || 0),
-                                        min: 0,
-                                        step: 1000
-                                    })
-                                )
-                            ),
+                    h('div', { className: 'row mb-4' },
+                        h('div', { className: 'col-md-6 mb-3' },
+                            h('label', { className: 'form-label fw-bold' }, 'Hours to make a consistent change:'),
+                            h('input', {
+                                type: 'number',
+                                className: 'form-control',
+                                value: hours,
+                                onChange: (e) => setHours(Number(e.target.value) || 0),
+                                min: 0,
+                                step: 0.5
+                            })
+                        ),
+                        h('div', { className: 'col-md-6 mb-3' },
+                            h('label', { className: 'form-label fw-bold' }, 'Average annual salary of an engineer:'),
+                            h('input', {
+                                type: 'number',
+                                className: 'form-control',
+                                value: salary,
+                                onChange: (e) => setSalary(Number(e.target.value) || 0),
+                                min: 0,
+                                step: 1000
+                            })
+                        )
+                    ),
 
-                            h('div', { className: 'alert alert-success' },
-                                h('h5', { className: 'mb-2' }, 'Cost to make a consistent change:'),
-                                h('h3', { className: 'mb-0' },
-                                    `$${(results.numberOfReposWithDuplicationOrDrift * hours * (salary / 365 / 8)).toFixed(2)}`
-                                )
-                            )
+                    h('div', { className: 'alert alert-success' },
+                        h('h5', { className: 'mb-2' }, 'Cost to make a consistent change:'),
+                        h('h3', { className: 'mb-0' },
+                            `$${(results.numberOfReposWithDuplicationOrDrift * hours * (salary / 365 / 8)).toFixed(2)}`
                         )
                     )
                 );
