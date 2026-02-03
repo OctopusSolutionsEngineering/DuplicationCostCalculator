@@ -163,26 +163,7 @@
                                 })()
                             ),
 
-                    h('p', { className: 'mb-3 mt-4' },
-                        'A "consistent change" implies that any change to an action (such as a version or configuration change) in a GitHub Workflow is replicated consistently in all other workflows that implement similar actions.'
-                    ),
-                    h('p', { className: 'mb-3' },
-                        'This includes:'
-                    ),
-                    h('ul', { className: 'mb-4' },
-                        h('li', null, 'Committing the change to the initial workflow'),
-                        h('li', null, 'Identifying additional workflows that may have duplicate actions or actions with older versions configured, and then:'),
-                        h('ul', null,
-                            h('li', null, 'Finding the owner of the additional workflows'),
-                            h('li', null, 'Editing, committing, testing, reviewing, and merging the changes to the additional workflow files')
-                        ),
-                    ),
-                    h('p', { className: 'mb-4' },
-                        `The cost to make a consistent change can be estimated using the formula:`
-                    ),
-                    h('p', { className: 'mb-4 font-monospace' },
-                        `Repos with duplicate actions or version drift (${results.numberOfReposWithDuplicationOrDrift}) * hours to make a consistent change (${hours}) * average annual salary of an engineer (${salary}) / 365 days / 8 hour workday.`
-                    ),
+
 
                     h('div', { className: 'row mb-4' },
                         h('div', { className: 'col-md-6 mb-3' },
@@ -214,6 +195,27 @@
                         h('h3', { className: 'mb-0' },
                             `$${(results.numberOfReposWithDuplicationOrDrift * hours * (salary / 365 / 8)).toFixed(2)}`
                         )
+                    ),
+
+                    h('p', { className: 'mb-3 mt-4' },
+                        'A "consistent change" is any change to an action (such as a version or configuration change) in a GitHub Workflow that must be replicated consistently in all other workflows.'
+                    ),
+                    h('p', { className: 'mb-3' },
+                        'This includes:'
+                    ),
+                    h('ul', { className: 'mb-4' },
+                        h('li', null, 'Committing the change to the initial workflow'),
+                        h('li', null, 'Identifying additional workflows that may have duplicate actions or actions with older versions configured, and then:'),
+                        h('ul', null,
+                            h('li', null, 'Finding the owner of the additional workflows'),
+                            h('li', null, 'Editing, committing, testing, reviewing, and merging the changes to the additional workflow files')
+                        ),
+                    ),
+                    h('p', { className: 'mb-4' },
+                        `The cost to make a consistent change can be estimated using the formula:`
+                    ),
+                    h('p', { className: 'mb-4 font-monospace' },
+                        `Repos with duplicate actions or version drift (${results.numberOfReposWithDuplicationOrDrift}) * hours to make a consistent change (${hours}) * average annual salary of an engineer (${salary}) / 365 days / 8 hour workday.`
                     ),
 
                     h('div', { className: 'alert alert-info mt-4' },
