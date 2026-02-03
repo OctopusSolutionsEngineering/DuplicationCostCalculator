@@ -75,19 +75,19 @@ func GenerateReportFromWorkflows(workflows map[string][]string) Report {
 					}
 
 					report.Comparisons[repo1][repo2] = RepoMeasurements{
-						StepsWithDifferentVersions:       diffVersions,
-						StepsWithDifferentVersionsCount:  diffVersionsCount,
-						StepsWithSimilarConfig:           similarConfigs,
-						StepsWithSimilarConfigCount:      similarConfigsCount,
-						StepsThatIndicateDuplicationRisk: len(uniqueActions),
+						StepsWithDifferentVersions:       lo.Uniq(append(report.Comparisons[repo1][repo2].StepsWithDifferentVersions, diffVersions...)),
+						StepsWithDifferentVersionsCount:  report.Comparisons[repo1][repo2].StepsWithDifferentVersionsCount + diffVersionsCount,
+						StepsWithSimilarConfig:           lo.Uniq(append(report.Comparisons[repo1][repo2].StepsWithSimilarConfig, similarConfigs...)),
+						StepsWithSimilarConfigCount:      report.Comparisons[repo1][repo2].StepsWithSimilarConfigCount + similarConfigsCount,
+						StepsThatIndicateDuplicationRisk: report.Comparisons[repo1][repo2].StepsThatIndicateDuplicationRisk + len(uniqueActions),
 					}
 
 					report.Comparisons[repo2][repo1] = RepoMeasurements{
-						StepsWithDifferentVersions:       diffVersions,
-						StepsWithDifferentVersionsCount:  diffVersionsCount,
-						StepsWithSimilarConfig:           similarConfigs,
-						StepsWithSimilarConfigCount:      similarConfigsCount,
-						StepsThatIndicateDuplicationRisk: len(uniqueActions),
+						StepsWithDifferentVersions:       lo.Uniq(append(report.Comparisons[repo1][repo2].StepsWithDifferentVersions, diffVersions...)),
+						StepsWithDifferentVersionsCount:  report.Comparisons[repo1][repo2].StepsWithDifferentVersionsCount + diffVersionsCount,
+						StepsWithSimilarConfig:           lo.Uniq(append(report.Comparisons[repo1][repo2].StepsWithSimilarConfig, similarConfigs...)),
+						StepsWithSimilarConfigCount:      report.Comparisons[repo1][repo2].StepsWithSimilarConfigCount + similarConfigsCount,
+						StepsThatIndicateDuplicationRisk: report.Comparisons[repo1][repo2].StepsThatIndicateDuplicationRisk + len(uniqueActions),
 					}
 				}
 			}
@@ -403,10 +403,14 @@ func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) ([]A
 	for _, action1 := range actions1 {
 		for _, action2 := range actions2 {
 
-			if action1.Uses == action2.Uses && action1.UsesVersion != action2.UsesVersion {
-				count += 2
-				actions = append(actions, action1)
-				actions = append(actions, action2)
+			if action1.Uses != "" && action1.UsesVersion != "" && action2.UsesVersion != "" && action1.Uses == action2.Uses && action1.UsesVersion != action2.UsesVersion {
+				if !lo.ContainsBy(actions, func(item Action) bool {
+					return item.Id == action1.Id
+				}) {
+					count += 2
+					actions = append(actions, action1)
+					actions = append(actions, action2)
+				}
 
 				if !slices.Contains(result, action1.Uses) {
 					result = append(result, action1.Uses)
@@ -431,10 +435,13 @@ func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) 
 					distance := action1.hash.Diff(action2.hash)
 
 					if distance <= HighSimilarity {
-						count += 2
-
-						actions = append(actions, action1)
-						actions = append(actions, action2)
+						if !lo.ContainsBy(actions, func(item Action) bool {
+							return item.Id == action1.Id
+						}) {
+							count += 2
+							actions = append(actions, action1)
+							actions = append(actions, action2)
+						}
 
 						uses := action1.Uses
 						if uses == "" {
