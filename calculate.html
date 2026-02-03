@@ -80,10 +80,11 @@
 
                     h('h1', { className: 'mb-4' }, 'Consistent Change Cost Analysis'),
 
-                    // Summary Paragraph
-                    h('div', { className: 'alert alert-info mb-4' },
-                        h('p', { className: 'mb-0' },
-                            `This scan found ${results.numberOfReposWithDuplicationOrDrift} of ${results.numberOfRepos} (${(results.numberOfReposWithDuplicationOrDrift / results.numberOfRepos * 100).toFixed(2)}%) repositories either shared actions with different versions (version drift) or included actions that were substantially similar to one another (duplicate actions).`
+                    h('div', { className: 'alert alert-info mt-4' },
+                        h('h3', { className: 'mb-0' },
+                            'Learn how ',
+                            h('a', { href: 'https://octopus.com/use-case/platform-hub', target: '_blank', rel: 'noopener noreferrer' }, 'Octopus Deploy Platform Hub'),
+                            ' deploys consistent changes with the click of a button.'
                         )
                     ),
 
@@ -218,13 +219,6 @@
                         h('h5', { className: 'mb-2' }, 'Cost to make a consistent change:'),
                         h('h3', { className: 'mb-0' },
                             `$${(results.numberOfReposWithDuplicationOrDrift * hours * (salary / 365 / 8)).toFixed(2)}`
-                        )
-                    ),
-                    h('div', { className: 'alert alert-info mt-4' },
-                        h('h3', { className: 'mb-0' },
-                            'Learn how ',
-                            h('a', { href: 'https://octopus.com/use-case/platform-hub', target: '_blank', rel: 'noopener noreferrer' }, 'Octopus Deploy Platform Hub'),
-                            ' deploys consistent changes with the click of a button.'
                         )
                     ),
                     h('div', { className: 'alert alert-light mt-4' },
