@@ -7,6 +7,7 @@ type Report struct {
 	Contributors                        map[string][]string                    `json:"contributors"`
 	UniqueContributors                  []string                               `json:"uniqueContributors"`
 	WorkflowAdvisories                  map[string][]string                    `json:"workflowAdvisories"`
+	ActionAuthors                       map[string][]string                    `json:"actionAuthors"`
 }
 
 type RepoMeasurements struct {

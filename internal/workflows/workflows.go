@@ -76,19 +76,19 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 		Comparisons:        map[string]map[string]RepoMeasurements{},
 		Contributors:       map[string][]string{},
 		WorkflowAdvisories: map[string][]string{},
+		ActionAuthors:      map[string][]string{},
 		NumberOfRepos:      len(sortedRepoNames),
 	}
 
 	for i := 0; i < len(sortedRepoNames); i++ {
 		repo1 := sortedRepoNames[i]
+		actionsList1 := repoActions[repo1]
 		report.Contributors[repo1] = contributors[repo1]
 		report.WorkflowAdvisories[repo1] = repoAdvisories[repo1]
+		report.ActionAuthors[repo1] = GetActionAuthorsFromActionsList(actionsList1)
 
 		for j := i + 1; j < len(sortedRepoNames); j++ {
-
 			repo2 := sortedRepoNames[j]
-
-			actionsList1 := repoActions[repo1]
 			actionsList2 := repoActions[repo2]
 
 			for _, actions1 := range actionsList1 {
@@ -536,4 +536,18 @@ func splitRepo(repo string) (string, string, error) {
 		return "", "", fmt.Errorf("invalid repository format: %s", repo)
 	}
 	return parts[0], parts[1], nil
+}
+
+func GetActionAuthorsFromActionsList(actionsList [][]Action) []string {
+	if actionsList == nil {
+		return []string{}
+	}
+
+	return lo.Uniq(lo.FilterMap(lo.Flatten(actionsList), func(item Action, index int) (string, bool) {
+		split := strings.Split(item.Uses, "/")
+		if len(split) > 0 {
+			return split[0], true
+		}
+		return "", false
+	}))
 }
