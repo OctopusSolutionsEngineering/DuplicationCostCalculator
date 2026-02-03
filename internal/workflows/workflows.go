@@ -56,8 +56,8 @@ func GenerateReportFromWorkflows(workflows map[string][]string) Report {
 
 			for _, actions1 := range actionsList1 {
 				for _, actions2 := range actionsList2 {
-					diffVersions := FindActionsWithDifferentVersions(actions1, actions2)
-					similarConfigs := FindActionsWithSimilarConfigurations(actions1, actions2)
+					diffVersionsCount, diffVersions := FindActionsWithDifferentVersions(actions1, actions2)
+					similarConfigsCount, similarConfigs := FindActionsWithSimilarConfigurations(actions1, actions2)
 
 					if _, ok := report.Comparisons[repo1]; !ok {
 						report.Comparisons[repo1] = make(map[string]RepoMeasurements)
@@ -68,13 +68,17 @@ func GenerateReportFromWorkflows(workflows map[string][]string) Report {
 					}
 
 					report.Comparisons[repo1][repo2] = RepoMeasurements{
-						StepsWithDifferentVersions: diffVersions,
-						StepsWithSimilarConfig:     similarConfigs,
+						StepsWithDifferentVersions:      diffVersions,
+						StepsWithDifferentVersionsCount: diffVersionsCount,
+						StepsWithSimilarConfig:          similarConfigs,
+						StepsWithSimilarConfigCount:     similarConfigsCount,
 					}
 
 					report.Comparisons[repo2][repo1] = RepoMeasurements{
-						StepsWithDifferentVersions: diffVersions,
-						StepsWithSimilarConfig:     similarConfigs,
+						StepsWithDifferentVersions:      diffVersions,
+						StepsWithDifferentVersionsCount: diffVersionsCount,
+						StepsWithSimilarConfig:          similarConfigs,
+						StepsWithSimilarConfigCount:     similarConfigsCount,
 					}
 				}
 			}
@@ -375,22 +379,28 @@ func convertStringMap(input map[string]interface{}) map[string]string {
 	return result
 }
 
-func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) int {
+func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) (int, []string) {
 	count := 0
+	result := []string{}
 
 	for _, action1 := range actions1 {
 		for _, action2 := range actions2 {
+
 			if action1.Uses == action2.Uses && action1.UsesVersion != action2.UsesVersion {
 				count += 2
+				if !slices.Contains(result, action1.Uses) {
+					result = append(result, action1.Uses)
+				}
 			}
 		}
 	}
 
-	return count
+	return count, result
 }
 
-func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) int {
+func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) (int, []string) {
 
+	result := []string{}
 	count := 0
 
 	for _, action1 := range actions1 {
@@ -400,13 +410,21 @@ func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) 
 					distance := action1.hash.Diff(action2.hash)
 
 					if distance <= HighSimilarity {
-						// two steps that are similar
 						count += 2
+
+						uses := action1.Uses
+						if uses == "" {
+							uses = "(script step)"
+						}
+
+						if !slices.Contains(result, uses) {
+							result = append(result, uses)
+						}
 					}
 				}
 			}
 		}
 	}
 
-	return count
+	return count, result
 }

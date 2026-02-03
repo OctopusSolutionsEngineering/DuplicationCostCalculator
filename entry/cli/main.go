@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/workflows"
 )
@@ -22,8 +23,8 @@ func main() {
 		println(sourceRepo)
 		for repoName, measurements := range comparasion {
 			println("  ", repoName)
-			println("    Steps with different versions:", measurements.StepsWithDifferentVersions)
-			println("    Steps with similar config:", measurements.StepsWithSimilarConfig)
+			println("    Steps with different versions:", measurements.StepsWithDifferentVersionsCount, strings.Join(measurements.StepsWithDifferentVersions, ", "))
+			println("    Steps with similar config:", measurements.StepsWithSimilarConfigCount, strings.Join(measurements.StepsWithSimilarConfig, ", "))
 		}
 	}
 }
