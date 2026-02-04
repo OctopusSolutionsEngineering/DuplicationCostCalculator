@@ -49,7 +49,9 @@
                 while (initialRepos.length < 10) {
                     initialRepos.push("");
                 }
-            } else {
+            }
+
+            if (!initialRepos || initialRepos.filter(x => x.trim()).length === 0) {
                 // Priority 2: localStorage
                 const savedRepos = localStorage.getItem('repositories');
                 if (savedRepos) {
@@ -67,10 +69,12 @@
                         // If parsing fails, use defaults
                         initialRepos = defaultRepos;
                     }
-                } else {
-                    // Priority 3: Default list
-                    initialRepos = defaultRepos;
                 }
+            }
+
+            if (!initialRepos || initialRepos.filter(x => x.trim()).length === 0) {
+                // Priority 3: Default list
+                initialRepos = defaultRepos;
             }
 
             const [repositories, setRepositories] = useState(initialRepos);
