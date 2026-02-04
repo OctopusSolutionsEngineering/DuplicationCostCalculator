@@ -8,16 +8,27 @@ import (
 )
 
 func Login(c *gin.Context) {
+	reposParam := c.Query("repos")
+
 	if client.UsePrivateKeyAuth() {
-		// Redirect to calculate page as there is no need to log in
-		c.Redirect(http.StatusFound, "/calculate")
+		// Redirect to repos page as there is no need to log in
+		if reposParam != "" {
+			c.Redirect(http.StatusFound, "/repos?repos="+reposParam)
+		} else {
+			c.Redirect(http.StatusFound, "/repos")
+		}
+		return
 	}
 
 	// Check if github_token cookie exists
 	token, err := c.Cookie("github_token")
 	if err == nil && token != "" {
-		// User is authenticated, redirect to calculate page
-		c.Redirect(http.StatusFound, "/calculate")
+		// User is authenticated, redirect to repos page
+		if reposParam != "" {
+			c.Redirect(http.StatusFound, "/repos?repos="+reposParam)
+		} else {
+			c.Redirect(http.StatusFound, "/repos")
+		}
 		return
 	}
 
