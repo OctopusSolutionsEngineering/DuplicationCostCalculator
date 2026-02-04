@@ -87,19 +87,19 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 		report.WorkflowAdvisories[repo1] = repoAdvisories[repo1]
 		report.ActionAuthors[repo1] = GetActionAuthorsFromActionsList(actionsList1)
 
-		// The unique list of uses values that identity the kinds of steps that have version drift
-		stepsWithDifferentVersions := []string{}
-		// The unique list of uses values that identity the kinds of steps that have similar config
-		stepsWithSimilarConfig := []string{}
-
-		diffVersionsIds := []string{}
-		similarConfigIds := []string{}
-
 		uniqueActions := []string{}
 
 		for j := i + 1; j < len(sortedRepoNames); j++ {
 			repo2 := sortedRepoNames[j]
 			actionsList2 := repoActions[repo2]
+
+			// The unique list of uses values that identity the kinds of steps that have version drift
+			stepsWithDifferentVersions := []string{}
+			// The unique list of uses values that identity the kinds of steps that have similar config
+			stepsWithSimilarConfig := []string{}
+
+			diffVersionsIds := []string{}
+			similarConfigIds := []string{}
 
 			for _, actions1 := range actionsList1 {
 				for _, actions2 := range actionsList2 {
@@ -149,23 +149,14 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 		}
 	}
 
-	numberOfReposWithDuplicationOrDrift := 0
-	totalContributors := []string{}
-	for _, repo := range sortedRepoNames {
-		totalContributors = append(totalContributors, report.Contributors[repo]...)
-		foundDuplicationOrDrift := false
-		for _, measurements := range report.Comparisons[repo] {
-			if measurements.StepsThatIndicateDuplicationRisk > 0 {
-				foundDuplicationOrDrift = true
-			}
-		}
-		if foundDuplicationOrDrift {
-			numberOfReposWithDuplicationOrDrift++
-		}
-	}
-
-	report.NumberOfReposWithDuplicationOrDrift = numberOfReposWithDuplicationOrDrift
-	report.UniqueContributors = lo.Uniq(totalContributors)
+	report.NumberOfReposWithDuplicationOrDrift = len(lo.Filter(lo.Values(report.Comparisons), func(item map[string]RepoMeasurements, index int) bool {
+		// If any of the comparisons for a repo indicate that there are steps that would need to be updated to ensure consistency between the workflows,
+		// then we can consider that repo to have duplication or drift
+		return len(lo.Filter(lo.Values(item), func(item RepoMeasurements, index int) bool {
+			return item.StepsThatIndicateDuplicationRisk > 0
+		})) > 0
+	}))
+	report.UniqueContributors = lo.Uniq(lo.Flatten(lo.Values(report.Contributors)))
 
 	return report
 }

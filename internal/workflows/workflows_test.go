@@ -143,24 +143,28 @@ jobs:
 
 func TestFindActionsWithDifferentVersions(t *testing.T) {
 	actions1 := []Action{
-		{Uses: "actions/checkout", UsesVersion: "v3"},
-		{Uses: "actions/setup-node", UsesVersion: "v3"},
-		{Uses: "actions/setup-go", UsesVersion: "v4"},
-		{Uses: "actions/cache", UsesVersion: "v3"},
+		{Id: "1-1", Uses: "actions/checkout", UsesVersion: "v3"},
+		{Id: "1-2", Uses: "actions/setup-node", UsesVersion: "v3"},
+		{Id: "1-3", Uses: "actions/setup-go", UsesVersion: "v4"},
+		{Id: "1-4", Uses: "actions/cache", UsesVersion: "v3"},
 	}
 
 	actions2 := []Action{
-		{Uses: "actions/checkout", UsesVersion: "v4"},
-		{Uses: "actions/setup-node", UsesVersion: "v3"},
-		{Uses: "actions/setup-go", UsesVersion: "v5"},
-		{Uses: "actions/upload-artifact", UsesVersion: "v3"},
+		{Id: "2-1", Uses: "actions/checkout", UsesVersion: "v4"},
+		{Id: "2-2", Uses: "actions/setup-node", UsesVersion: "v3"},
+		{Id: "2-3", Uses: "actions/setup-go", UsesVersion: "v5"},
+		{Id: "2-4", Uses: "actions/upload-artifact", UsesVersion: "v3"},
 	}
 
-	_, count, _ := FindActionsWithDifferentVersions(actions1, actions2)
+	items, names := FindActionsWithDifferentVersions(actions1, actions2)
 
 	// Expected: checkout (v3 vs v4) and setup-go (v4 vs v5) = 2 differences
-	if count != 2 {
-		t.Errorf("Expected 2 actions with different versions, got %d", count)
+	if len(names) != 2 {
+		t.Errorf("Expected 2 action types with different versions, got %d %v", len(names), names)
+	}
+
+	if len(items) != 4 {
+		t.Errorf("Expected 4 actions with different versions, got %d %v", len(items), items)
 	}
 }
 
@@ -175,10 +179,10 @@ func TestFindActionsWithDifferentVersionsNoMatches(t *testing.T) {
 		{Uses: "actions/cache", UsesVersion: "v3"},
 	}
 
-	_, count, _ := FindActionsWithDifferentVersions(actions1, actions2)
+	items, _ := FindActionsWithDifferentVersions(actions1, actions2)
 
-	if count != 0 {
-		t.Errorf("Expected 0 actions with different versions, got %d", count)
+	if len(items) != 0 {
+		t.Errorf("Expected 0 actions with different versions, got %d", len(items))
 	}
 }
 
@@ -193,10 +197,10 @@ func TestFindActionsWithDifferentVersionsSameVersions(t *testing.T) {
 		{Uses: "actions/setup-node", UsesVersion: "v3"},
 	}
 
-	_, count, _ := FindActionsWithDifferentVersions(actions1, actions2)
+	items, _ := FindActionsWithDifferentVersions(actions1, actions2)
 
-	if count != 0 {
-		t.Errorf("Expected 0 actions with different versions when all match, got %d", count)
+	if len(items) != 0 {
+		t.Errorf("Expected 0 actions with different versions when all match, got %d", len(items))
 	}
 }
 
@@ -206,10 +210,10 @@ func TestFindActionsWithDifferentVersionsEmptyLists(t *testing.T) {
 		{Uses: "actions/checkout", UsesVersion: "v4"},
 	}
 
-	_, count, _ := FindActionsWithDifferentVersions(actions1, actions2)
+	items, _ := FindActionsWithDifferentVersions(actions1, actions2)
 
-	if count != 0 {
-		t.Errorf("Expected 0 actions with different versions when one list is empty, got %d", count)
+	if len(items) != 0 {
+		t.Errorf("Expected 0 actions with different versions when one list is empty, got %d", len(items))
 	}
 }
 
@@ -224,18 +228,19 @@ func TestFindActionsWithDifferentVersionsMultipleSameAction(t *testing.T) {
 		{Id: "2-2", Uses: "actions/checkout", UsesVersion: "v4"},
 	}
 
-	_, count, _ := FindActionsWithDifferentVersions(actions1, actions2)
+	items, _ := FindActionsWithDifferentVersions(actions1, actions2)
 
 	// Each instance in actions1 matches with each instance in actions2
 	// 2 * 2 = 4 differences
-	if count != 4 {
-		t.Errorf("Expected 4 differences (2x2), got %d", count)
+	if len(items) != 4 {
+		t.Errorf("Expected 4 differences (2x2), got %d", len(items))
 	}
 }
 
 func TestFindActionsWithSimilarConfigurations(t *testing.T) {
 	actions1 := []Action{
 		{
+			Id:          "1-1",
 			Uses:        "actions/checkout",
 			UsesVersion: "v4",
 			With: map[string]string{
@@ -244,6 +249,7 @@ func TestFindActionsWithSimilarConfigurations(t *testing.T) {
 			},
 		},
 		{
+			Id:          "1-2",
 			Uses:        "actions/setup-node",
 			UsesVersion: "v3",
 			With: map[string]string{
@@ -258,6 +264,7 @@ func TestFindActionsWithSimilarConfigurations(t *testing.T) {
 
 	actions2 := []Action{
 		{
+			Id:          "2-1",
 			Uses:        "actions/checkout",
 			UsesVersion: "v3",
 			With: map[string]string{
@@ -266,6 +273,7 @@ func TestFindActionsWithSimilarConfigurations(t *testing.T) {
 			},
 		},
 		{
+			Id:          "2-2",
 			Uses:        "actions/setup-node",
 			UsesVersion: "v3",
 			With: map[string]string{
@@ -286,11 +294,11 @@ func TestFindActionsWithSimilarConfigurations(t *testing.T) {
 		actions2[i].GenerateHash()
 	}
 
-	_, count, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
+	items, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
 
 	// Expected: 2 pairs of matching actions with similar configs = 4 total (2 * 2)
-	if count < 2 {
-		t.Errorf("Expected at least 2 similar configurations, got %d", count)
+	if len(items) < 2 {
+		t.Errorf("Expected at least 2 similar configurations, got %d", len(items))
 	}
 }
 
@@ -317,10 +325,10 @@ func TestFindActionsWithSimilarConfigurationsNoMatches(t *testing.T) {
 		actions2[i].GenerateHash()
 	}
 
-	_, count, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
+	items, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
 
-	if count != 0 {
-		t.Errorf("Expected 0 similar configurations when action names differ, got %d", count)
+	if len(items) != 0 {
+		t.Errorf("Expected 0 similar configurations when action names differ, got %d", len(items))
 	}
 }
 
@@ -330,10 +338,10 @@ func TestFindActionsWithSimilarConfigurationsEmptyLists(t *testing.T) {
 		{Uses: "actions/checkout", UsesVersion: "v4"},
 	}
 
-	_, count, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
+	items, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
 
-	if count != 0 {
-		t.Errorf("Expected 0 similar configurations when one list is empty, got %d", count)
+	if len(items) != 0 {
+		t.Errorf("Expected 0 similar configurations when one list is empty, got %d", len(items))
 	}
 }
 
@@ -373,11 +381,11 @@ func TestFindActionsWithSimilarConfigurationsDifferentConfigs(t *testing.T) {
 		actions2[i].GenerateHash()
 	}
 
-	_, count, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
+	items, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
 
 	// With significantly different configs, should not count as highly similar
-	if count != 0 {
-		t.Errorf("Expected 0 for very different configurations, got %d", count)
+	if len(items) != 0 {
+		t.Errorf("Expected 0 for very different configurations, got %d", len(items))
 	}
 }
 
@@ -404,10 +412,10 @@ func TestFindActionsWithSimilarConfigurationsNoHashes(t *testing.T) {
 
 	// Don't generate hashes - test nil hash handling
 
-	_, count, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
+	items, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
 
-	if count != 0 {
-		t.Errorf("Expected 0 when hashes are not generated, got %d", count)
+	if len(items) != 0 {
+		t.Errorf("Expected 0 when hashes are not generated, got %d", len(items))
 	}
 }
 
@@ -458,12 +466,12 @@ func TestFindActionsWithSimilarConfigurationsMultiplePairs(t *testing.T) {
 		actions2[i].GenerateHash()
 	}
 
-	_, count, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
+	items, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
 
 	// 2 actions in actions1 × 2 actions in actions2 = 4 comparisons
 	// All should be highly similar, so count should be 8 (2 per similar pair)
-	if count < 4 {
-		t.Errorf("Expected at least 4 (2x2x2) similar configurations, got %d", count)
+	if len(items) < 4 {
+		t.Errorf("Expected at least 4 (2x2x2) similar configurations, got %d", len(items))
 	}
 }
 
