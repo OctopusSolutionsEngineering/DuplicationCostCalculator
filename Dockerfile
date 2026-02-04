@@ -28,7 +28,7 @@ WORKDIR /app
 COPY --from=builder /app/main .
 
 # Copy HTML files and other static assets
-COPY index.html calculate.html ./
+COPY index.html calculate.html repos.html ./
 
 # Expose port 8080
 EXPOSE 8080
