@@ -39,6 +39,7 @@
             const [results, setResults] = useState(null);
             const [hours, setHours] = useState(4);
             const [salary, setSalary] = useState(120000);
+            const [dialogData, setDialogData] = useState(null);
 
             const handleCalculate = async () => {
                 setIsLoading(true);
@@ -198,7 +199,13 @@
                                                             if (comparison) {
                                                                 return h('td', {
                                                                     key: repo2,
-                                                                    className: 'text-center align-middle'
+                                                                    className: 'text-center align-middle',
+                                                                    style: 'cursor: pointer;',
+                                                                    onClick: () => setDialogData({
+                                                                        repo1,
+                                                                        repo2,
+                                                                        comparison
+                                                                    })
                                                                 },
                                                                     h('div', { className: 'small' },
                                                                         h('div', { className: 'text-warning fw-bold' },
@@ -288,6 +295,64 @@
                             h('li', null, h('span', { className: 'fw-bold' }, 'Contributors'), ': Number of people who have contributed to the git repo.')
                         )
                     ),
+
+                    // Modal Dialog
+                    dialogData && h('div', {
+                        className: 'modal show',
+                        style: 'display: block; background-color: rgba(0,0,0,0.5);',
+                        onClick: () => setDialogData(null)
+                    },
+                        h('div', {
+                            className: 'modal-dialog modal-lg modal-dialog-scrollable',
+                            onClick: (e) => e.stopPropagation()
+                        },
+                            h('div', { className: 'modal-content' },
+                                h('div', { className: 'modal-header' },
+                                    h('h5', { className: 'modal-title' },
+                                        `Comparison: ${dialogData.repo1} vs ${dialogData.repo2}`
+                                    ),
+                                    h('button', {
+                                        type: 'button',
+                                        className: 'btn-close',
+                                        onClick: () => setDialogData(null)
+                                    })
+                                ),
+                                h('div', { className: 'modal-body' },
+                                    h('div', { className: 'mb-4' },
+                                        h('h6', { className: 'text-warning fw-bold' },
+                                            `Steps with Different Versions (${dialogData.comparison.stepsWithDifferentVersionsCount})`
+                                        ),
+                                        dialogData.comparison.stepsWithDifferentVersions.length > 0
+                                            ? h('ul', { className: 'list-group' },
+                                                dialogData.comparison.stepsWithDifferentVersions.map((step, idx) =>
+                                                    h('li', { key: idx, className: 'list-group-item' }, step)
+                                                )
+                                            )
+                                            : h('p', { className: 'text-muted' }, 'No steps with different versions')
+                                    ),
+                                    h('div', null,
+                                        h('h6', { className: 'text-info fw-bold' },
+                                            `Steps with Similar Configurations (${dialogData.comparison.stepsWithSimilarConfigCount})`
+                                        ),
+                                        dialogData.comparison.stepsWithSimilarConfig.length > 0
+                                            ? h('ul', { className: 'list-group' },
+                                                dialogData.comparison.stepsWithSimilarConfig.map((step, idx) =>
+                                                    h('li', { key: idx, className: 'list-group-item' }, step)
+                                                )
+                                            )
+                                            : h('p', { className: 'text-muted' }, 'No steps with similar configurations')
+                                    )
+                                ),
+                                h('div', { className: 'modal-footer' },
+                                    h('button', {
+                                        type: 'button',
+                                        className: 'btn btn-secondary',
+                                        onClick: () => setDialogData(null)
+                                    }, 'Close')
+                                )
+                            )
+                        )
+                    )
                 );
             }
 
