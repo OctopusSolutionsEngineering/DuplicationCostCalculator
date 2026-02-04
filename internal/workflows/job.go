@@ -1,10 +1,7 @@
 package workflows
 
 import (
-	"fmt"
-	"slices"
-	"strings"
-
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/collections"
 	"github.com/glaslos/tlsh"
 )
 
@@ -28,7 +25,7 @@ func (action *Action) GenerateHash() {
 	action1Hash := tlsh.New()
 	foundConfig := false
 
-	settingsString := mapToString(action.Settings)
+	settingsString := collections.MapToString(action.Settings)
 	if settingsString != "" {
 		_, err := action1Hash.Write([]byte(settingsString))
 		foundConfig = true
@@ -37,7 +34,7 @@ func (action *Action) GenerateHash() {
 		}
 	}
 
-	envString := mapToString(action.Env)
+	envString := collections.MapToString(action.Env)
 	if envString != "" {
 		_, err := action1Hash.Write([]byte(envString))
 		foundConfig = true
@@ -46,7 +43,7 @@ func (action *Action) GenerateHash() {
 		}
 	}
 
-	withString := mapToString(action.With)
+	withString := collections.MapToString(action.With)
 	if withString != "" {
 		_, err := action1Hash.Write([]byte(withString))
 		foundConfig = true
@@ -59,22 +56,4 @@ func (action *Action) GenerateHash() {
 		action1Hash.Sum(nil)
 		action.hash = action1Hash
 	}
-}
-
-func mapToString(m map[string]string) string {
-	var sb strings.Builder
-
-	// process keys in sorted order
-	keys := []string{}
-	for k, _ := range m {
-		keys = append(keys, k)
-	}
-
-	slices.Sort(keys)
-
-	for _, k := range keys {
-		sb.WriteString(fmt.Sprintf("%s=%s;", k, m[k]))
-	}
-
-	return sb.String()
 }

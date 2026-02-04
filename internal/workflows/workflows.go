@@ -194,19 +194,13 @@ func FindWorkflows(client *github.Client, repo string) []string {
 		return []string{}
 	}
 
-	var workflows []string
+	files := lo.Filter(dirContent, func(item *github.RepositoryContent, index int) bool {
+		return item.GetType() == "file" && strings.HasSuffix(strings.ToLower(item.GetName()), ".yml") || strings.HasSuffix(strings.ToLower(item.GetName()), ".yaml")
+	})
 
-	// Iterate through files and fetch YAML/YML files
-	for _, content := range dirContent {
-		if content.GetType() == "file" {
-			name := content.GetName()
-			if strings.HasSuffix(strings.ToLower(name), ".yml") || strings.HasSuffix(strings.ToLower(name), ".yaml") {
-				workflows = append(workflows, name)
-			}
-		}
-	}
-
-	return workflows
+	return lo.Map(files, func(item *github.RepositoryContent, index int) string {
+		return item.GetName()
+	})
 }
 
 func WorkflowToString(client *github.Client, repo string, workflow string) string {
@@ -256,7 +250,6 @@ func FindContributorsToWorkflow(client *github.Client, repo string, workflow str
 	}
 
 	// Track unique contributors
-	contributorsMap := make(map[string]bool)
 	var contributors []string
 
 	// Fetch all commits for the workflow file (handle pagination)
@@ -267,15 +260,15 @@ func FindContributorsToWorkflow(client *github.Client, repo string, workflow str
 		}
 
 		// Extract unique contributor names
-		for _, commit := range commits {
-			if commit.Commit != nil && commit.Commit.Author != nil && commit.Commit.Author.Name != nil {
-				name := *commit.Commit.Author.Name
-				if !contributorsMap[name] {
-					contributorsMap[name] = true
-					contributors = append(contributors, name)
-				}
-			}
-		}
+		authors := lo.Filter(commits, func(item *github.RepositoryCommit, index int) bool {
+			return item.Commit != nil && item.Commit.Author != nil && item.Commit.Author.Name != nil
+		})
+
+		authorNames := lo.Map(authors, func(item *github.RepositoryCommit, index int) string {
+			return *item.Commit.Author.Name
+		})
+
+		contributors = lo.Uniq(append(contributors, authorNames...))
 
 		// Check if there are more pages
 		if resp.NextPage == 0 {
