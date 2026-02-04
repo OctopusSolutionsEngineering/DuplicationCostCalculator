@@ -123,11 +123,7 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 
 					// An overall number of the steps that would have to be updated to ensure consistency between the workflows
 					// This includes those that have version drift and those that have similar config
-					allActionsIds := lo.Map(append(diffVersionsActions, similarConfigsActions...), func(item Action, index int) string {
-						return item.Id
-					})
-
-					uniqueActions = lo.Uniq(allActionsIds)
+					uniqueActions = lo.Uniq(append(similarConfigIds, diffVersionsIds...))
 				}
 			}
 
