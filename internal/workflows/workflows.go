@@ -562,7 +562,7 @@ func GetActionAuthorsFromActionsList(actionsList [][]Action) []string {
 		split := strings.Split(item.Uses, "/")
 		if len(split) > 0 {
 			if split[0] == "" {
-				return "(built-in step)", false
+				return "(built-in step)", true
 			}
 			return split[0], true
 		}
