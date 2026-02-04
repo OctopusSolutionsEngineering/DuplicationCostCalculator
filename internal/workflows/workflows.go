@@ -143,13 +143,9 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 				StepsThatIndicateDuplicationRisk: len(uniqueActions),
 			}
 
-			report.Comparisons[repo2][repo1] = RepoMeasurements{
-				StepsWithDifferentVersions:       stepsWithDifferentVersions,
-				StepsWithDifferentVersionsCount:  len(diffVersionsIds),
-				StepsWithSimilarConfig:           stepsWithSimilarConfig,
-				StepsWithSimilarConfigCount:      len(similarConfigIds),
-				StepsThatIndicateDuplicationRisk: len(uniqueActions),
-			}
+			// The measurements for repo2 compared to repo1 are the same as repo1 compared to repo2,
+			// so we can copy them over instead of recalculating
+			report.Comparisons[repo2][repo1] = report.Comparisons[repo1][repo2]
 		}
 	}
 
@@ -161,7 +157,6 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 		for _, measurements := range report.Comparisons[repo] {
 			if measurements.StepsThatIndicateDuplicationRisk > 0 {
 				foundDuplicationOrDrift = true
-
 			}
 		}
 		if foundDuplicationOrDrift {
@@ -358,27 +353,12 @@ func ParseWorkflow(workflow string, workflowId int) []Action {
 				continue
 			}
 
-			uses := ""
-			usesInterface, ok := stepMap["uses"]
-			if ok {
-				usesString, ok := usesInterface.(string)
-				if ok {
-					// Script steps often don't have a 'uses' field
-					uses = usesString
-				}
-			}
+			uses := getStringProperty(stepMap, "uses")
 
 			// Split uses into action and version
-			var actionName, actionVersion string
-			if strings.Contains(uses, "@") {
-				parts := strings.SplitN(uses, "@", 2)
-				actionName = parts[0]
-				actionVersion = parts[1]
-			} else {
-				actionName = uses
-				actionVersion = "latest"
-			}
+			actionName, actionVersion := getActionIdAndVersion(uses)
 
+			// Get the various settings for the action
 			env := convertStringMap(getChildMap(stepMap, "env"))
 			with := convertStringMap(getChildMap(stepMap, "with"))
 			settings := getOtherValues(stepMap, []string{"uses", "env", "with"})
@@ -401,6 +381,15 @@ func ParseWorkflow(workflow string, workflowId int) []Action {
 	return actions
 }
 
+func getActionIdAndVersion(uses string) (string, string) {
+	if strings.Contains(uses, "@") {
+		parts := strings.SplitN(uses, "@", 2)
+		return parts[0], parts[1]
+	} else {
+		return uses, "latest"
+	}
+}
+
 func getOtherValues(input map[string]interface{}, excludeKeys []string) map[string]string {
 	result := make(map[string]string)
 	excludeMap := make(map[string]bool)
@@ -415,6 +404,19 @@ func getOtherValues(input map[string]interface{}, excludeKeys []string) map[stri
 	}
 
 	return result
+}
+
+func getStringProperty(input map[string]interface{}, key string) string {
+	usesInterface, ok := input[key]
+	if ok {
+		usesString, ok := usesInterface.(string)
+		if ok {
+			// Script steps often don't have a 'uses' field
+			return usesString
+		}
+	}
+
+	return ""
 }
 
 func getChildMap(input map[string]interface{}, key string) map[string]interface{} {
