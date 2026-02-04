@@ -84,7 +84,7 @@
                             h('div', { className: 'alert alert-danger' }, error),
                             h('button', {
                                 className: 'btn btn-secondary',
-                                onClick: () => window.location.href = 'repos'
+                                onClick: () => window.location.href = `repos?repos=${encodeURIComponent(reposParam)}`
                             }, '← Back to Repository List')
                         )
                     )
@@ -111,7 +111,7 @@
                     h('div', { className: 'mb-3' },
                         h('button', {
                             className: 'btn btn-secondary',
-                            onClick: () => window.location.href = 'repos'
+                            onClick: () => window.location.href = `repos?repos=${encodeURIComponent(reposParam)}`
                         }, '← Back to Repository List')
                     ),
 
