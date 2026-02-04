@@ -513,7 +513,7 @@ jobs:
 		"repo3": {workflow3},
 	}
 
-	report := GenerateReportFromWorkflows(workflows)
+	report := GenerateReportFromWorkflows(workflows, map[string][]string{}, map[string][]string{})
 
 	// Verify report structure is initialized
 	if report.Comparisons == nil {
@@ -572,7 +572,7 @@ jobs:
 func TestGenerateReportFromWorkflowsEmpty(t *testing.T) {
 	workflows := map[string][]string{}
 
-	report := GenerateReportFromWorkflows(workflows)
+	report := GenerateReportFromWorkflows(workflows, map[string][]string{}, map[string][]string{})
 
 	if report.Comparisons == nil {
 		t.Error("Expected Comparisons map to be initialized even for empty input")
@@ -592,10 +592,86 @@ jobs:
 		"repo1": {workflow},
 	}
 
-	report := GenerateReportFromWorkflows(workflows)
+	report := GenerateReportFromWorkflows(workflows, map[string][]string{}, map[string][]string{})
 
 	// With only one repo, there should be no comparisons
 	if report.Comparisons == nil {
 		t.Error("Expected Comparisons map to be initialized")
+	}
+
+	if len(report.Comparisons) != 0 {
+		t.Error("Expected Comparisons map to be initialized even for single input")
+	}
+}
+
+func TestGenerateReportFromWorkflowsDissimilarSteps(t *testing.T) {
+	workflow := `
+name: Single Workflow
+jobs:
+  build:
+    steps:
+      - name: Script 1
+        run: This is a test script
+`
+
+	workflow2 := `
+name: Single Workflow
+jobs:
+  build:
+    steps:
+      - name: Some script step
+        run: These scripts are nothing alike
+`
+
+	workflows := map[string][]string{
+		"repo1": {workflow},
+		"repo2": {workflow2},
+	}
+
+	report := GenerateReportFromWorkflows(workflows, map[string][]string{}, map[string][]string{})
+
+	// With only one repo, there should be no comparisons
+	if report.Comparisons == nil {
+		t.Error("Expected Comparisons map to be initialized")
+	}
+
+	if report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount != 0 || len(report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig) != 0 {
+		t.Error("Expected no similar steps, found " + fmt.Sprintf("%v %v", report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount, report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig))
+	}
+}
+
+func TestGenerateReportFromWorkflowsSimilarSteps(t *testing.T) {
+	workflow := `
+name: Single Workflow
+jobs:
+  build:
+    steps:
+      - name: Script 1
+        run: This is a test script
+`
+
+	workflow2 := `
+name: Single Workflow
+jobs:
+  build:
+    steps:
+      - name: Script 1
+        run: This is a testing script
+`
+
+	workflows := map[string][]string{
+		"repo1": {workflow},
+		"repo2": {workflow2},
+	}
+
+	report := GenerateReportFromWorkflows(workflows, map[string][]string{}, map[string][]string{})
+
+	// With only one repo, there should be no comparisons
+	if report.Comparisons == nil {
+		t.Error("Expected Comparisons map to be initialized")
+	}
+
+	if report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount != 2 || len(report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig) != 1 {
+		t.Error("Expected one similar steps, found " + fmt.Sprintf("%v %v", report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount, report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig))
 	}
 }
