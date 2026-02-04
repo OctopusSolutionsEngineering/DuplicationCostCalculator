@@ -14,29 +14,25 @@
         import { useState } from 'https://esm.sh/preact/hooks';
 
         function CalculatePage() {
-            const [repositories, setRepositories] = useState([
-                "OctopusSolutionsEngineering/OctopusTerraformExport",
-                "OctopusSolutionsEngineering/OctopusRecommendationEngine",
-                "OctopusSolutionsEngineering/OctopusCopilot",
-                "OctopusSolutionsEngineering/HelloWorld",
-                "OctopusSolutionsEngineering/DuplicationCostCalculator",
-                "",
-                "",
-                "",
-                "",
-                "",
-            ]);
+            // Parse query string for repos parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const reposParam = urlParams.get('repos');
+
+            // Redirect to repos.html if no repos parameter is present
+            if (!reposParam) {
+                window.location.href = 'repos';
+                return null;
+            }
+
+            // Parse repos from query string
+            const reposFromQuery = reposParam.split(',').map(r => r.trim()).filter(r => r !== '');
+
+            const [repositories, setRepositories] = useState(reposFromQuery);
             const [isLoading, setIsLoading] = useState(false);
             const [error, setError] = useState('');
             const [results, setResults] = useState(null);
             const [hours, setHours] = useState(4);
             const [salary, setSalary] = useState(120000);
-
-            const handleInputChange = (index, value) => {
-                const newRepos = [...repositories];
-                newRepos[index] = value;
-                setRepositories(newRepos);
-            };
 
             const handleCalculate = async () => {
                 setIsLoading(true);
@@ -49,7 +45,7 @@
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            repositories: repositories.filter(repo => repo.trim() !== '')
+                            repositories: repositories
                         }),
                         credentials: 'include' // Include cookies
                     });
@@ -68,13 +64,47 @@
                 }
             };
 
+            // Auto-trigger calculation when page loads
+            useState(() => {
+                handleCalculate();
+            }, []);
+
+            // If we have an error before results, show it
+            if (error && !results) {
+                return h('div', { className: 'container mt-5 mb-5' },
+                    h('div', { className: 'row justify-content-center' },
+                        h('div', { className: 'col-md-8' },
+                            h('div', { className: 'alert alert-danger' }, error),
+                            h('button', {
+                                className: 'btn btn-secondary',
+                                onClick: () => window.location.href = 'repos.html'
+                            }, '← Back to Repository List')
+                        )
+                    )
+                );
+            }
+
+            // Show loading state
+            if (isLoading && !results) {
+                return h('div', { className: 'container mt-5 mb-5' },
+                    h('div', { className: 'row justify-content-center' },
+                        h('div', { className: 'col-md-8 text-center' },
+                            h('h2', null, 'Calculating...'),
+                            h('div', { className: 'spinner-border text-primary mt-3', role: 'status' },
+                                h('span', { className: 'visually-hidden' }, 'Loading...')
+                            )
+                        )
+                    )
+                );
+            }
+
             // If we have results, clear the document and show the results table
             if (results) {
                 return h('div', { className: 'container-fluid mt-4 mb-5' },
                     h('div', { className: 'mb-3' },
                         h('button', {
                             className: 'btn btn-secondary',
-                            onClick: () => setResults(null)
+                            onClick: () => window.location.href = 'repos'
                         }, '← Back to Repository List')
                     ),
 
@@ -255,38 +285,8 @@
                 );
             }
 
-            // Otherwise show the input form
-            return h('div', { className: 'container mt-5 mb-5' },
-                h('div', { className: 'row justify-content-center' },
-                    h('div', { className: 'col-md-8' },
-                        h('h1', { className: 'mb-4' }, 'Git Repositories'),
-                        h('p', null, 'Enter the GitHub repositories you want to analyze for duplicate actions and version drift. Use the format "owner/repo".'),
-
-                        error && h('div', { className: 'alert alert-danger' }, error),
-
-                        h('div', { className: 'mb-3' },
-                            repositories.map((repo, index) =>
-                                h('div', { className: 'mb-3', key: index },
-                                    h('input', {
-                                        type: 'text',
-                                        className: 'form-control',
-                                        placeholder: `Repository (e.g., owner/repo)`,
-                                        value: repo,
-                                        onChange: (e) => handleInputChange(index, e.target.value),
-                                        disabled: isLoading
-                                    })
-                                )
-                            )
-                        ),
-
-                        h('button', {
-                            className: 'btn btn-primary btn-lg w-100',
-                            onClick: handleCalculate,
-                            disabled: isLoading
-                        }, isLoading ? 'Calculating...' : 'Calculate')
-                    )
-                )
-            );
+            // If no results yet, return null (will show loading state above)
+            return null;
         }
 
         render(h(CalculatePage), document.getElementById('app'));

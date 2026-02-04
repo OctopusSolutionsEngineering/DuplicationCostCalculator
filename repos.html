@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Repositories - Consistent Change Cost Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script type="module">
+        import { h, render } from 'https://esm.sh/preact';
+        import { useState } from 'https://esm.sh/preact/hooks';
+
+        function ReposPage() {
+            // Parse query string for repos parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const reposParam = urlParams.get('repos');
+
+            // Default repositories
+            const defaultRepos = [
+                "OctopusSolutionsEngineering/OctopusTerraformExport",
+                "OctopusSolutionsEngineering/OctopusRecommendationEngine",
+                "OctopusSolutionsEngineering/OctopusCopilot",
+                "OctopusSolutionsEngineering/HelloWorld",
+                "OctopusSolutionsEngineering/DuplicationCostCalculator",
+                "",
+                "",
+                "",
+                "",
+                "",
+            ];
+
+            // Parse repos from query string if available, otherwise use defaults
+            let initialRepos;
+            if (reposParam) {
+                const reposFromQuery = reposParam.split(',').map(r => r.trim());
+                // Pad with empty strings to have at least 10 entries
+                initialRepos = [...reposFromQuery];
+                while (initialRepos.length < 10) {
+                    initialRepos.push("");
+                }
+            } else {
+                initialRepos = defaultRepos;
+            }
+
+            const [repositories, setRepositories] = useState(initialRepos);
+
+            const handleInputChange = (index, value) => {
+                const newRepos = [...repositories];
+                newRepos[index] = value;
+                setRepositories(newRepos);
+            };
+
+            const handleCalculate = () => {
+                // Filter out empty repositories and build query string
+                const validRepos = repositories.filter(repo => repo.trim() !== '');
+                if (validRepos.length === 0) {
+                    alert('Please enter at least one repository');
+                    return;
+                }
+
+                const reposParam = validRepos.join(',');
+                window.location.href = `calculate?repos=${encodeURIComponent(reposParam)}`;
+            };
+
+            return h('div', { className: 'container mt-5 mb-5' },
+                h('div', { className: 'row justify-content-center' },
+                    h('div', { className: 'col-md-8' },
+                        h('h1', { className: 'mb-4' }, 'Git Repositories'),
+                        h('p', null, 'Enter the GitHub repositories you want to analyze for duplicate actions and version drift. Use the format "owner/repo".'),
+
+                        h('div', { className: 'mb-3' },
+                            repositories.map((repo, index) =>
+                                h('div', { className: 'mb-3', key: index },
+                                    h('input', {
+                                        type: 'text',
+                                        className: 'form-control',
+                                        placeholder: `Repository (e.g., owner/repo)`,
+                                        value: repo,
+                                        onChange: (e) => handleInputChange(index, e.target.value)
+                                    })
+                                )
+                            )
+                        ),
+
+                        h('button', {
+                            className: 'btn btn-primary btn-lg w-100',
+                            onClick: handleCalculate
+                        }, 'Calculate')
+                    )
+                )
+            );
+        }
+
+        render(h(ReposPage), document.getElementById('app'));
+    </script>
+</body>
+</html>
