@@ -87,45 +87,72 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 		report.WorkflowAdvisories[repo1] = repoAdvisories[repo1]
 		report.ActionAuthors[repo1] = GetActionAuthorsFromActionsList(actionsList1)
 
+		// The unique list of uses values that identity the kinds of steps that have version drift
+		stepsWithDifferentVersions := []string{}
+		// The unique list of uses values that identity the kinds of steps that have similar config
+		stepsWithSimilarConfig := []string{}
+
+		diffVersionsIds := []string{}
+		similarConfigIds := []string{}
+
+		uniqueActions := []string{}
+
 		for j := i + 1; j < len(sortedRepoNames); j++ {
 			repo2 := sortedRepoNames[j]
 			actionsList2 := repoActions[repo2]
 
 			for _, actions1 := range actionsList1 {
 				for _, actions2 := range actionsList2 {
-					diffVersionsActions, diffVersionsCount, diffVersions := FindActionsWithDifferentVersions(actions1, actions2)
-					similarConfigsActions, similarConfigsCount, similarConfigs := FindActionsWithSimilarConfigurations(actions1, actions2)
+					diffVersionsActions, diffVersions := FindActionsWithDifferentVersions(actions1, actions2)
+					similarConfigsActions, similarConfigs := FindActionsWithSimilarConfigurations(actions1, actions2)
 
+					// Generate a list of all the "uses" values for steps with different versions and similar config, ensuring uniqueness
+					// This provides a quick way to idtenify the kinds of steps that are contributing to duplication or drift
+					stepsWithDifferentVersions = lo.Uniq(append(stepsWithDifferentVersions, diffVersions...))
+					stepsWithSimilarConfig = lo.Uniq(append(stepsWithSimilarConfig, similarConfigs...))
+
+					// Generate a list of all the action IDs for steps with different versions and similar config
+					// This provides a complete list of steps that would have to be updated to ensure consistency between the workflows
+					similarConfigIds = lo.Uniq(append(similarConfigIds, lo.Map(similarConfigsActions, func(item Action, index int) string {
+						return item.Id
+					})...))
+
+					diffVersionsIds = lo.Uniq(append(diffVersionsIds, lo.Map(diffVersionsActions, func(item Action, index int) string {
+						return item.Id
+					})...))
+
+					// An overall number of the steps that would have to be updated to ensure consistency between the workflows
+					// This includes those that have version drift and those that have similar config
 					allActionsIds := lo.Map(append(diffVersionsActions, similarConfigsActions...), func(item Action, index int) string {
 						return item.Id
 					})
 
-					uniqueActions := lo.Uniq(allActionsIds)
-
-					if _, ok := report.Comparisons[repo1]; !ok {
-						report.Comparisons[repo1] = make(map[string]RepoMeasurements)
-					}
-
-					if _, ok := report.Comparisons[repo2]; !ok {
-						report.Comparisons[repo2] = make(map[string]RepoMeasurements)
-					}
-
-					report.Comparisons[repo1][repo2] = RepoMeasurements{
-						StepsWithDifferentVersions:       lo.Uniq(append(report.Comparisons[repo1][repo2].StepsWithDifferentVersions, diffVersions...)),
-						StepsWithDifferentVersionsCount:  report.Comparisons[repo1][repo2].StepsWithDifferentVersionsCount + diffVersionsCount,
-						StepsWithSimilarConfig:           lo.Uniq(append(report.Comparisons[repo1][repo2].StepsWithSimilarConfig, similarConfigs...)),
-						StepsWithSimilarConfigCount:      report.Comparisons[repo1][repo2].StepsWithSimilarConfigCount + similarConfigsCount,
-						StepsThatIndicateDuplicationRisk: report.Comparisons[repo1][repo2].StepsThatIndicateDuplicationRisk + len(uniqueActions),
-					}
-
-					report.Comparisons[repo2][repo1] = RepoMeasurements{
-						StepsWithDifferentVersions:       lo.Uniq(append(report.Comparisons[repo2][repo1].StepsWithDifferentVersions, diffVersions...)),
-						StepsWithDifferentVersionsCount:  report.Comparisons[repo2][repo1].StepsWithDifferentVersionsCount + diffVersionsCount,
-						StepsWithSimilarConfig:           lo.Uniq(append(report.Comparisons[repo2][repo1].StepsWithSimilarConfig, similarConfigs...)),
-						StepsWithSimilarConfigCount:      report.Comparisons[repo2][repo1].StepsWithSimilarConfigCount + similarConfigsCount,
-						StepsThatIndicateDuplicationRisk: report.Comparisons[repo2][repo1].StepsThatIndicateDuplicationRisk + len(uniqueActions),
-					}
+					uniqueActions = lo.Uniq(allActionsIds)
 				}
+			}
+
+			if _, ok := report.Comparisons[repo1]; !ok {
+				report.Comparisons[repo1] = make(map[string]RepoMeasurements)
+			}
+
+			if _, ok := report.Comparisons[repo2]; !ok {
+				report.Comparisons[repo2] = make(map[string]RepoMeasurements)
+			}
+
+			report.Comparisons[repo1][repo2] = RepoMeasurements{
+				StepsWithDifferentVersions:       stepsWithDifferentVersions,
+				StepsWithDifferentVersionsCount:  len(diffVersionsIds),
+				StepsWithSimilarConfig:           stepsWithSimilarConfig,
+				StepsWithSimilarConfigCount:      len(similarConfigIds),
+				StepsThatIndicateDuplicationRisk: len(uniqueActions),
+			}
+
+			report.Comparisons[repo2][repo1] = RepoMeasurements{
+				StepsWithDifferentVersions:       stepsWithDifferentVersions,
+				StepsWithDifferentVersionsCount:  len(diffVersionsIds),
+				StepsWithSimilarConfig:           stepsWithSimilarConfig,
+				StepsWithSimilarConfigCount:      len(similarConfigIds),
+				StepsThatIndicateDuplicationRisk: len(uniqueActions),
 			}
 		}
 	}
@@ -418,9 +445,8 @@ func convertStringMap(input map[string]interface{}) map[string]string {
 	return result
 }
 
-func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) ([]Action, int, []string) {
+func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) ([]Action, []string) {
 	actions := []Action{}
-	count := 0
 	result := []string{}
 
 	for _, action1 := range actions1 {
@@ -430,14 +456,12 @@ func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) ([]A
 				if !lo.ContainsBy(actions, func(item Action) bool {
 					return item.Id == action1.Id
 				}) {
-					count++
 					actions = append(actions, action1)
 				}
 
 				if !lo.ContainsBy(actions, func(item Action) bool {
 					return item.Id == action2.Id
 				}) {
-					count++
 					actions = append(actions, action2)
 				}
 
@@ -448,14 +472,13 @@ func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) ([]A
 		}
 	}
 
-	return actions, count, result
+	return actions, result
 }
 
-func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) ([]Action, int, []string) {
+func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) ([]Action, []string) {
 
 	actions := []Action{}
 	result := []string{}
-	count := 0
 
 	for _, action1 := range actions1 {
 		for _, action2 := range actions2 {
@@ -467,14 +490,12 @@ func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) 
 						if !lo.ContainsBy(actions, func(item Action) bool {
 							return item.Id == action1.Id
 						}) {
-							count++
 							actions = append(actions, action1)
 						}
 
 						if !lo.ContainsBy(actions, func(item Action) bool {
 							return item.Id == action2.Id
 						}) {
-							count++
 							actions = append(actions, action2)
 						}
 
@@ -492,7 +513,7 @@ func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) 
 		}
 	}
 
-	return actions, count, result
+	return actions, result
 }
 
 func GetWorkflowAdvisories(client *github.Client, repo string) []string {
