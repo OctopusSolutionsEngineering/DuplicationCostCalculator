@@ -2,6 +2,7 @@ package workflows
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/glaslos/tlsh"
@@ -62,8 +63,18 @@ func (action *Action) GenerateHash() {
 
 func mapToString(m map[string]string) string {
 	var sb strings.Builder
-	for k, v := range m {
-		sb.WriteString(fmt.Sprintf("%s=%s;", k, v))
+
+	// process keys in sorted order
+	keys := []string{}
+	for k, _ := range m {
+		keys = append(keys, k)
 	}
+
+	slices.Sort(keys)
+
+	for _, k := range keys {
+		sb.WriteString(fmt.Sprintf("%s=%s;", k, m[k]))
+	}
+
 	return sb.String()
 }

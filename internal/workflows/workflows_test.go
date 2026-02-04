@@ -703,7 +703,7 @@ name: Single Workflow
 jobs:
   build:
     steps:
-      - name: Script 1
+      - name: Script edited
         run: This is a testing script
 `
 
@@ -751,7 +751,7 @@ jobs:
         with:
           workflow_conclusion: success
           name: junit-test-summary-2
-          if_no_artifact_found: warn
+          if_no_artifact_found: warn2
           branch: main2
 `
 
