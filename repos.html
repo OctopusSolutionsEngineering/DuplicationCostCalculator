@@ -40,17 +40,37 @@
                 "",
             ];
 
-            // Parse repos from query string if available, otherwise use defaults
+            // Determine initial repos with priority: query param > localStorage > defaults
             let initialRepos;
             if (reposParam) {
+                // Priority 1: Query parameter
                 const reposFromQuery = reposParam.split(',').map(r => r.trim());
-                // Pad with empty strings to have at least 10 entries
                 initialRepos = [...reposFromQuery];
                 while (initialRepos.length < 10) {
                     initialRepos.push("");
                 }
             } else {
-                initialRepos = defaultRepos;
+                // Priority 2: localStorage
+                const savedRepos = localStorage.getItem('repositories');
+                if (savedRepos) {
+                    try {
+                        const parsedRepos = JSON.parse(savedRepos);
+                        if (Array.isArray(parsedRepos) && parsedRepos.length > 0) {
+                            initialRepos = [...parsedRepos];
+                            while (initialRepos.length < 10) {
+                                initialRepos.push("");
+                            }
+                        } else {
+                            initialRepos = defaultRepos;
+                        }
+                    } catch (e) {
+                        // If parsing fails, use defaults
+                        initialRepos = defaultRepos;
+                    }
+                } else {
+                    // Priority 3: Default list
+                    initialRepos = defaultRepos;
+                }
             }
 
             const [repositories, setRepositories] = useState(initialRepos);
@@ -59,13 +79,16 @@
                 const newRepos = [...repositories];
                 newRepos[index] = value;
                 setRepositories(newRepos);
+
+                // Save to localStorage
+                localStorage.setItem('repositories', JSON.stringify(newRepos));
             };
 
             const handleCalculate = () => {
                 // Filter out empty repositories and build query string
                 const validRepos = repositories.filter(repo => repo.trim() !== '');
-                if (validRepos.length === 0) {
-                    alert('Please enter at least one repository');
+                if (validRepos.length < 2) {
+                    alert('You must supply at least two repositories to compare with each other.');
                     return;
                 }
 

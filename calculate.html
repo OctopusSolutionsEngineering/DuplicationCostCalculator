@@ -27,6 +27,12 @@
             // Parse repos from query string
             const reposFromQuery = reposParam.split(',').map(r => r.trim()).filter(r => r !== '');
 
+            // We need at least two repos
+            if (reposFromQuery.length < 2) {
+                window.location.href = 'repos';
+                return null;
+            }
+
             const [repositories, setRepositories] = useState(reposFromQuery);
             const [isLoading, setIsLoading] = useState(false);
             const [error, setError] = useState('');
