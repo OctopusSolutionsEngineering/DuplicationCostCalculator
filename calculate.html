@@ -18,7 +18,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const reposParam = urlParams.get('repos');
 
-            // Redirect to repos.html if no repos parameter is present
+            // Redirect to repos if no repos parameter is present
             if (!reposParam) {
                 window.location.href = 'repos';
                 return null;
@@ -84,7 +84,7 @@
                             h('div', { className: 'alert alert-danger' }, error),
                             h('button', {
                                 className: 'btn btn-secondary',
-                                onClick: () => window.location.href = 'repos.html'
+                                onClick: () => window.location.href = 'repos'
                             }, '← Back to Repository List')
                         )
                     )
