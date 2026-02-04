@@ -12,6 +12,7 @@ import (
 
 func CallbackHandler(c *gin.Context) {
 	code := c.Query("code")
+	state := c.Query("state")
 
 	if code == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -102,6 +103,10 @@ func CallbackHandler(c *gin.Context) {
 		true,                      // httpOnly
 	)
 
-	// Redirect to calculate page
-	c.Redirect(http.StatusFound, "/calculate")
+	// Redirect to repos page with repos query param if state was provided
+	if state != "" {
+		c.Redirect(http.StatusFound, "/repos?repos="+state)
+	} else {
+		c.Redirect(http.StatusFound, "/repos")
+	}
 }

@@ -19,13 +19,24 @@
             const handleLogin = () => {
                 setIsLoading(true);
 
+                // Get repos from query string if present
+                const urlParams = new URLSearchParams(window.location.search);
+                const reposParam = urlParams.get('repos');
+
                 // Replace with your GitHub OAuth App credentials
                 const clientId = 'Iv23liJtGEKxmrX20YUl';
                 const redirectUri = encodeURIComponent(window.location.origin + '/callback');
                 const scope = 'workflow';
 
+                // Build OAuth URL with state parameter containing repos if available
+                let oauthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+                if (reposParam) {
+                    const state = encodeURIComponent(reposParam);
+                    oauthUrl += `&state=${state}`;
+                }
+
                 // Redirect to GitHub OAuth authorization
-                window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+                window.location.href = oauthUrl;
             };
 
             return h('div', { className: 'container mt-5' },
