@@ -14,8 +14,13 @@ func ReposHandler(c *gin.Context) {
 		// Check if github_token cookie exists
 		token, err := c.Cookie("github_token")
 		if err != nil || token == "" {
-			// User is not authenticated, redirect to login page
-			c.Redirect(http.StatusFound, "/")
+			// User is not authenticated, redirect to login page with repos query param if present
+			reposParam := c.Query("repos")
+			if reposParam != "" {
+				c.Redirect(http.StatusFound, "/?repos="+reposParam)
+			} else {
+				c.Redirect(http.StatusFound, "/")
+			}
 			return
 		}
 	}
