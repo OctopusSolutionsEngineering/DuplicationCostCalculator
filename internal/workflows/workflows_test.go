@@ -170,13 +170,13 @@ func TestFindActionsWithDifferentVersions(t *testing.T) {
 
 func TestFindActionsWithDifferentVersionsNoMatches(t *testing.T) {
 	actions1 := []Action{
-		{Uses: "actions/checkout", UsesVersion: "v3"},
-		{Uses: "actions/setup-node", UsesVersion: "v3"},
+		{Id: "1-1", Uses: "actions/checkout", UsesVersion: "v3"},
+		{Id: "1-2", Uses: "actions/setup-node", UsesVersion: "v3"},
 	}
 
 	actions2 := []Action{
-		{Uses: "actions/setup-go", UsesVersion: "v4"},
-		{Uses: "actions/cache", UsesVersion: "v3"},
+		{Id: "2-1", Uses: "actions/setup-go", UsesVersion: "v4"},
+		{Id: "2-2", Uses: "actions/cache", UsesVersion: "v3"},
 	}
 
 	items, _ := FindActionsWithDifferentVersions(actions1, actions2)
@@ -188,13 +188,13 @@ func TestFindActionsWithDifferentVersionsNoMatches(t *testing.T) {
 
 func TestFindActionsWithDifferentVersionsSameVersions(t *testing.T) {
 	actions1 := []Action{
-		{Uses: "actions/checkout", UsesVersion: "v4"},
-		{Uses: "actions/setup-node", UsesVersion: "v3"},
+		{Id: "1-1", Uses: "actions/checkout", UsesVersion: "v4"},
+		{Id: "1-2", Uses: "actions/setup-node", UsesVersion: "v3"},
 	}
 
 	actions2 := []Action{
-		{Uses: "actions/checkout", UsesVersion: "v4"},
-		{Uses: "actions/setup-node", UsesVersion: "v3"},
+		{Id: "2-1", Uses: "actions/checkout", UsesVersion: "v4"},
+		{Id: "2-2", Uses: "actions/setup-node", UsesVersion: "v3"},
 	}
 
 	items, _ := FindActionsWithDifferentVersions(actions1, actions2)
@@ -207,7 +207,7 @@ func TestFindActionsWithDifferentVersionsSameVersions(t *testing.T) {
 func TestFindActionsWithDifferentVersionsEmptyLists(t *testing.T) {
 	actions1 := []Action{}
 	actions2 := []Action{
-		{Uses: "actions/checkout", UsesVersion: "v4"},
+		{Id: "2-1", Uses: "actions/checkout", UsesVersion: "v4"},
 	}
 
 	items, _ := FindActionsWithDifferentVersions(actions1, actions2)
@@ -305,6 +305,7 @@ func TestFindActionsWithSimilarConfigurations(t *testing.T) {
 func TestFindActionsWithSimilarConfigurationsNoMatches(t *testing.T) {
 	actions1 := []Action{
 		{
+			Id:          "1-1",
 			Uses:        "actions/checkout",
 			UsesVersion: "v4",
 		},
@@ -312,6 +313,7 @@ func TestFindActionsWithSimilarConfigurationsNoMatches(t *testing.T) {
 
 	actions2 := []Action{
 		{
+			Id:          "2-1",
 			Uses:        "actions/setup-node",
 			UsesVersion: "v3",
 		},
@@ -335,7 +337,7 @@ func TestFindActionsWithSimilarConfigurationsNoMatches(t *testing.T) {
 func TestFindActionsWithSimilarConfigurationsEmptyLists(t *testing.T) {
 	actions1 := []Action{}
 	actions2 := []Action{
-		{Uses: "actions/checkout", UsesVersion: "v4"},
+		{Id: "2-1", Uses: "actions/checkout", UsesVersion: "v4"},
 	}
 
 	items, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
@@ -348,6 +350,7 @@ func TestFindActionsWithSimilarConfigurationsEmptyLists(t *testing.T) {
 func TestFindActionsWithSimilarConfigurationsDifferentConfigs(t *testing.T) {
 	actions1 := []Action{
 		{
+			Id:          "1-1",
 			Uses:        "actions/setup-node",
 			UsesVersion: "v3",
 			With: map[string]string{
@@ -365,6 +368,7 @@ func TestFindActionsWithSimilarConfigurationsDifferentConfigs(t *testing.T) {
 
 	actions2 := []Action{
 		{
+			Id:          "2-1",
 			Uses:        "actions/setup-node",
 			UsesVersion: "v3",
 			With: map[string]string{
@@ -392,6 +396,7 @@ func TestFindActionsWithSimilarConfigurationsDifferentConfigs(t *testing.T) {
 func TestFindActionsWithSimilarConfigurationsNoHashes(t *testing.T) {
 	actions1 := []Action{
 		{
+			Id:          "1-1",
 			Uses:        "actions/checkout",
 			UsesVersion: "v4",
 			With: map[string]string{
@@ -402,6 +407,7 @@ func TestFindActionsWithSimilarConfigurationsNoHashes(t *testing.T) {
 
 	actions2 := []Action{
 		{
+			Id:          "2-1",
 			Uses:        "actions/checkout",
 			UsesVersion: "v4",
 			With: map[string]string{
