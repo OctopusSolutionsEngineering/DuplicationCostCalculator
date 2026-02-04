@@ -104,7 +104,7 @@
                 h('div', { className: 'row justify-content-center' },
                     h('div', { className: 'col-md-8' },
                         h('h1', { className: 'mb-4' }, 'Git Repositories'),
-                        h('p', null, 'Enter the GitHub repositories you want to analyze for duplicate actions and version drift. Use the format "owner/repo".'),
+                        h('p', null, 'Enter the GitHub repositories you want to analyze for duplicate actions and version drift. Use the format "owner/repo". You must supply at least 2 repositories to compare with each other.'),
 
                         h('div', { className: 'mb-3' },
                             repositories.map((repo, index) =>
