@@ -430,8 +430,14 @@ func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) ([]A
 				if !lo.ContainsBy(actions, func(item Action) bool {
 					return item.Id == action1.Id
 				}) {
-					count += 2
+					count++
 					actions = append(actions, action1)
+				}
+
+				if !lo.ContainsBy(actions, func(item Action) bool {
+					return item.Id == action2.Id
+				}) {
+					count++
 					actions = append(actions, action2)
 				}
 
@@ -461,8 +467,14 @@ func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) 
 						if !lo.ContainsBy(actions, func(item Action) bool {
 							return item.Id == action1.Id
 						}) {
-							count += 2
+							count++
 							actions = append(actions, action1)
+						}
+
+						if !lo.ContainsBy(actions, func(item Action) bool {
+							return item.Id == action2.Id
+						}) {
+							count++
 							actions = append(actions, action2)
 						}
 
