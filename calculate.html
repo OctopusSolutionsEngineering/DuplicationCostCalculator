@@ -40,6 +40,7 @@
             const [hours, setHours] = useState(4);
             const [salary, setSalary] = useState(120000);
             const [dialogData, setDialogData] = useState(null);
+            const [repoDetailsDialog, setRepoDetailsDialog] = useState(null);
 
             const handleCalculate = async () => {
                 setIsLoading(true);
@@ -144,7 +145,13 @@
                                                     return h('th', {
                                                         key: repo,
                                                         className: 'text-center align-middle',
-                                                        style: 'min-width: 120px; max-width: 150px;'
+                                                        style: 'min-width: 120px; max-width: 150px; cursor: pointer;',
+                                                        onClick: () => setRepoDetailsDialog({
+                                                            repo,
+                                                            contributors: results.contributors?.[repo] || [],
+                                                            actionAuthors: results.actionAuthors?.[repo] || [],
+                                                            advisories: results.workflowAdvisories?.[repo] || []
+                                                        })
                                                     },
                                                         h('div', { style: 'font-size: 0.75rem; line-height: 1.2;' },
                                                             h('div', { className: 'text-muted' }, org || ''),
@@ -171,7 +178,16 @@
                                                 const advisoryCount1 = results.workflowAdvisories?.[repo1]?.length || 0;
                                                 const actionAuthorsCount1 = results.actionAuthors?.[repo1]?.length || 0;
                                                 return h('tr', { key: repo1 },
-                                                    h('th', { className: 'align-middle', style: 'max-width: 200px; word-wrap: break-word;' },
+                                                    h('th', {
+                                                        className: 'align-middle',
+                                                        style: 'max-width: 200px; word-wrap: break-word; cursor: pointer;',
+                                                        onClick: () => setRepoDetailsDialog({
+                                                            repo: repo1,
+                                                            contributors: results.contributors?.[repo1] || [],
+                                                            actionAuthors: results.actionAuthors?.[repo1] || [],
+                                                            advisories: results.workflowAdvisories?.[repo1] || []
+                                                        })
+                                                    },
                                                         h('div', { style: 'font-size: 0.85rem; line-height: 1.3;' },
                                                             h('div', { className: 'text-muted' }, org1 || ''),
                                                             h('div', { className: 'fw-bold' }, repoName1 || repo1),
@@ -348,6 +364,74 @@
                                         type: 'button',
                                         className: 'btn btn-secondary',
                                         onClick: () => setDialogData(null)
+                                    }, 'Close')
+                                )
+                            )
+                        )
+                    ),
+
+                    // Repository Details Dialog
+                    repoDetailsDialog && h('div', {
+                        className: 'modal show',
+                        style: 'display: block; background-color: rgba(0,0,0,0.5);',
+                        onClick: () => setRepoDetailsDialog(null)
+                    },
+                        h('div', {
+                            className: 'modal-dialog modal-lg modal-dialog-scrollable',
+                            onClick: (e) => e.stopPropagation()
+                        },
+                            h('div', { className: 'modal-content' },
+                                h('div', { className: 'modal-header' },
+                                    h('h5', { className: 'modal-title' },
+                                        `Repository Details: ${repoDetailsDialog.repo}`
+                                    ),
+                                    h('button', {
+                                        type: 'button',
+                                        className: 'btn-close',
+                                        onClick: () => setRepoDetailsDialog(null)
+                                    })
+                                ),
+                                h('div', { className: 'modal-body' },
+                                    h('div', { className: 'mb-4' },
+                                        h('h6', { className: 'fw-bold' },
+                                            `Action Authors (${repoDetailsDialog.actionAuthors.length})`
+                                        ),
+                                        repoDetailsDialog.actionAuthors.length > 0
+                                            ? h('ul', { className: 'list-group' },
+                                                repoDetailsDialog.actionAuthors.map((author, idx) =>
+                                                    h('li', { key: idx, className: 'list-group-item' }, author)
+                                                )
+                                            )
+                                            : h('p', { className: 'text-muted' }, 'No action authors found')
+                                    ),
+                                    h('div', { className: 'mb-4' },
+                                        h('h6', { className: 'fw-bold' },
+                                            `Git Contributors (${repoDetailsDialog.contributors.length})`
+                                        ),
+                                        repoDetailsDialog.contributors.length > 0
+                                            ? h('ul', { className: 'list-group' },
+                                                repoDetailsDialog.contributors.map((contributor, idx) =>
+                                                    h('li', { key: idx, className: 'list-group-item' }, contributor)
+                                                )
+                                            )
+                                            : h('p', { className: 'text-muted' }, 'No contributors found')
+                                    ),
+                                    repoDetailsDialog.advisories.length > 0 && h('div', null,
+                                        h('h6', { className: 'text-danger fw-bold' },
+                                            `Security Advisories (${repoDetailsDialog.advisories.length})`
+                                        ),
+                                        h('ul', { className: 'list-group' },
+                                            repoDetailsDialog.advisories.map((advisory, idx) =>
+                                                h('li', { key: idx, className: 'list-group-item' }, advisory)
+                                            )
+                                        )
+                                    )
+                                ),
+                                h('div', { className: 'modal-footer' },
+                                    h('button', {
+                                        type: 'button',
+                                        className: 'btn btn-secondary',
+                                        onClick: () => setRepoDetailsDialog(null)
                                     }, 'Close')
                                 )
                             )
