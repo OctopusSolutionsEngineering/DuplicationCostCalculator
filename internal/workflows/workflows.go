@@ -483,7 +483,7 @@ func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) 
 
 						uses := action1.Uses
 						if uses == "" {
-							uses = "(script step)"
+							uses = "(built-in step)"
 						}
 
 						if !slices.Contains(result, uses) {
@@ -561,6 +561,9 @@ func GetActionAuthorsFromActionsList(actionsList [][]Action) []string {
 	return lo.Uniq(lo.FilterMap(lo.Flatten(actionsList), func(item Action, index int) (string, bool) {
 		split := strings.Split(item.Uses, "/")
 		if len(split) > 0 {
+			if split[0] == "" {
+				return "(built-in step)", false
+			}
 			return split[0], true
 		}
 		return "", false
