@@ -688,6 +688,55 @@ jobs:
 	}
 }
 
+func TestGenerateReportFromWorkflowsDissimilarSteps3(t *testing.T) {
+	workflow := `
+name: Single Workflow
+jobs:
+  build:
+    steps:
+      - name: Download JUnit Summary from Previous Workflow
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow_conclusion: success
+          name: junit-test-summary
+          if_no_artifact_found: warn
+          branch: main
+`
+
+	workflow2 := `
+name: Single Workflow
+jobs:
+  build:
+    steps:
+      # It doesn't take much to make these dissimilar
+      - name: Download JUnit Summary from Previous Workflow 2
+        id: download-artifact-2
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow_conclusion: success 
+          name: junit-test-summary-2
+          if_no_artifact_found: warn
+          branch: main-2
+`
+
+	workflows := map[string][]string{
+		"repo1": {workflow},
+		"repo2": {workflow2},
+	}
+
+	report := GenerateReportFromWorkflows(workflows, map[string][]string{}, map[string][]string{})
+
+	// With only one repo, there should be no comparisons
+	if report.Comparisons == nil {
+		t.Error("Expected Comparisons map to be initialized")
+	}
+
+	if report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount != 0 || len(report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig) != 0 {
+		t.Error("Expected no similar steps, found " + fmt.Sprintf("%v %v", report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount, report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig))
+	}
+}
+
 func TestGenerateReportFromWorkflowsSimilarSteps(t *testing.T) {
 	workflow := `
 name: Single Workflow
