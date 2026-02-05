@@ -12,5 +12,10 @@ func SplitRepo(repo string) (string, string, error) {
 	if len(parts) < 2 {
 		return "", "", fmt.Errorf("invalid repository format: %s", repo)
 	}
+
+	if parts[0] == "" || parts[1] == "" {
+		return "", "", fmt.Errorf("invalid repository format: %s", repo)
+	}
+
 	return parts[0], parts[1], nil
 }
