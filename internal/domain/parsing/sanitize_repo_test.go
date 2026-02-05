@@ -63,7 +63,7 @@ func TestSanitizeRepo(t *testing.T) {
 		{
 			name:     "https URL with .git suffix",
 			repo:     "https://github.com/owner/repo.git",
-			expected: "owner/repo.git",
+			expected: "owner/repo",
 		},
 		{
 			name:     "empty string",

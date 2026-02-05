@@ -128,7 +128,7 @@ func TestSplitRepo(t *testing.T) {
 			name:          "URL with .git extension",
 			repo:          "https://github.com/owner/repo.git",
 			expectedOwner: "owner",
-			expectedRepo:  "repo.git",
+			expectedRepo:  "repo",
 			expectError:   false,
 		},
 		{
