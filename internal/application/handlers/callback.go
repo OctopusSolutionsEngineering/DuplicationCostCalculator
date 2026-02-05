@@ -1,16 +1,22 @@
 package handlers
 
 import (
-	"bytes"
-	"encoding/json"
-	"io"
 	"net/http"
-	"os"
 
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/configuration"
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/infrastructure/oauth"
 	"github.com/gin-gonic/gin"
 )
 
 func CallbackHandler(c *gin.Context) {
+	CallbackHandlerWrapped(c, oauth.ExchangeCodeForToken, configuration.GetClientId, configuration.GetClientSecret)
+}
+
+func CallbackHandlerWrapped(
+	c *gin.Context,
+	oauthTokenExchange func(string, string, string, string) (oauth.TokenResponse, error),
+	clientIdSetting func() string,
+	clientSecretSetting func() string) {
 	code := c.Query("code")
 	state := c.Query("state")
 
@@ -22,8 +28,8 @@ func CallbackHandler(c *gin.Context) {
 	}
 
 	// Exchange code for access token
-	clientID := os.Getenv("DUPCOST_GITHUB_CLIENT_ID")
-	clientSecret := os.Getenv("DUPCOST_GITHUB_CLIENT_SECRET")
+	clientID := clientIdSetting()
+	clientSecret := clientSecretSetting()
 
 	if clientID == "" || clientSecret == "" {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -32,47 +38,11 @@ func CallbackHandler(c *gin.Context) {
 		return
 	}
 
-	// Prepare request to exchange code for token
-	requestBody, _ := json.Marshal(map[string]string{
-		"client_id":     clientID,
-		"client_secret": clientSecret,
-		"code":          code,
-	})
+	tokenResponse, err := oauthTokenExchange(clientID, clientSecret, code, "https://github.com/login/oauth/access_token")
 
-	req, err := http.NewRequest("POST", "https://github.com/login/oauth/access_token", bytes.NewBuffer(requestBody))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to create request",
-		})
-		return
-	}
-
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to exchange code for token",
-		})
-		return
-	}
-	defer resp.Body.Close()
-
-	body, _ := io.ReadAll(resp.Body)
-
-	var tokenResponse struct {
-		AccessToken string `json:"access_token"`
-		TokenType   string `json:"token_type"`
-		Scope       string `json:"scope"`
-		Error       string `json:"error"`
-		ErrorDesc   string `json:"error_description"`
-	}
-
-	if err := json.Unmarshal(body, &tokenResponse); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to parse token response",
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
 		})
 		return
 	}

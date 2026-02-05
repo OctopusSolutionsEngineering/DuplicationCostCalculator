@@ -3,12 +3,18 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/models"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/workflows"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/infrastructure/client"
 	"github.com/gin-gonic/gin"
+	"github.com/google/go-github/v57/github"
 )
 
 func CostHandler(c *gin.Context) {
+	CostHandlerWrapped(c, client.GetClient, workflows.GenerateReport)
+}
+
+func CostHandlerWrapped(c *gin.Context, getClient func(string) *github.Client, generateReport func(*github.Client, []string) models.Report) {
 	accessToken := ""
 
 	if !client.UsePrivateKeyAuth() {
@@ -36,9 +42,9 @@ func CostHandler(c *gin.Context) {
 		return
 	}
 
-	githubClient := client.GetClient(accessToken)
+	githubClient := getClient(accessToken)
 
-	report := workflows.GenerateReport(githubClient, requestBody.Repositories)
+	report := generateReport(githubClient, requestBody.Repositories)
 
 	c.JSON(http.StatusOK, report)
 }

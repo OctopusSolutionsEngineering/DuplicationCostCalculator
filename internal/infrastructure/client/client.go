@@ -7,19 +7,16 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/configuration"
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v57/github"
 	"golang.org/x/oauth2"
 )
 
-const GITHUB_APP_ID = "GITHUB_APP_ID"
-const GITHUB_INSTALLATION_ID = "GITHUB_INSTALLATION_ID"
-const GITHUB_PRIVATE_KEY_PATH = "GITHUB_PRIVATE_KEY_PATH"
-
 func UsePrivateKeyAuth() bool {
-	appIDStr := os.Getenv(GITHUB_APP_ID)
-	installationIDStr := os.Getenv(GITHUB_INSTALLATION_ID)
-	privateKeyPath := os.Getenv(GITHUB_PRIVATE_KEY_PATH)
+	appIDStr := configuration.GetGithubAppId()
+	installationIDStr := configuration.GetGitHubInstallationId()
+	privateKeyPath := configuration.GetGitHubPrivateKeyPath()
 
 	return appIDStr != "" && installationIDStr != "" && privateKeyPath != ""
 }
