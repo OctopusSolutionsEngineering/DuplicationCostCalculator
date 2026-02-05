@@ -7,6 +7,12 @@ import (
 	"net/http"
 )
 
+type TokenRequest struct {
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	Code         string `json:"code"`
+}
+
 type TokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
@@ -16,12 +22,18 @@ type TokenResponse struct {
 }
 
 func ExchangeCodeForToken(clientID string, clientSecret string, code string, url string) (TokenResponse, error) {
+	return ExchangeCodeForTokenWrapper(http.DefaultTransport, clientID, clientSecret, code, url)
+}
+
+func ExchangeCodeForTokenWrapper(transport http.RoundTripper, clientID string, clientSecret string, code string, url string) (TokenResponse, error) {
 	// Prepare request to exchange code for token
-	requestBody, _ := json.Marshal(map[string]string{
-		"client_id":     clientID,
-		"client_secret": clientSecret,
-		"code":          code,
-	})
+	tokenRequest := TokenRequest{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		Code:         code,
+	}
+
+	requestBody, _ := json.Marshal(tokenRequest)
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	if err != nil {
@@ -31,7 +43,9 @@ func ExchangeCodeForToken(clientID string, clientSecret string, code string, url
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	client := &http.Client{
+		Transport: transport,
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return TokenResponse{}, err
