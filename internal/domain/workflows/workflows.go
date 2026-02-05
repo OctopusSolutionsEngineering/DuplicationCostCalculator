@@ -97,45 +97,15 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 		report.WorkflowAdvisories[repo1] = repoAdvisories[repo1]
 		report.ActionAuthors[repo1] = GetActionAuthorsFromActionsList(actionsList1)
 
-		uniqueActions := []string{}
-
 		for j := i + 1; j < len(sortedRepoNames); j++ {
 			repo2 := sortedRepoNames[j]
 			actionsList2 := repoActions[repo2]
 
-			// The unique list of uses values that identity the kinds of steps that have version drift
-			stepsWithDifferentVersions := []string{}
-			// The unique list of uses values that identity the kinds of steps that have similar config
-			stepsWithSimilarConfig := []string{}
+			stepsWithDifferentVersions, diffVersionsIds, stepsWithSimilarConfig, similarConfigIds := GetActionsWithVersionDriftAndDuplication(actionsList1, actionsList2)
 
-			diffVersionsIds := []string{}
-			similarConfigIds := []string{}
-
-			for _, actions1 := range actionsList1 {
-				for _, actions2 := range actionsList2 {
-					diffVersionsActions, diffVersions := FindActionsWithDifferentVersions(actions1, actions2)
-					similarConfigsActions, similarConfigs := FindActionsWithSimilarConfigurations(actions1, actions2)
-
-					// Generate a list of all the "uses" values for steps with different versions and similar config, ensuring uniqueness
-					// This provides a quick way to idtenify the kinds of steps that are contributing to duplication or drift
-					stepsWithDifferentVersions = lo.Uniq(append(stepsWithDifferentVersions, diffVersions...))
-					stepsWithSimilarConfig = lo.Uniq(append(stepsWithSimilarConfig, similarConfigs...))
-
-					// Generate a list of all the action IDs for steps with different versions and similar config
-					// This provides a complete list of steps that would have to be updated to ensure consistency between the workflows
-					similarConfigIds = lo.Uniq(append(similarConfigIds, lo.Map(similarConfigsActions, func(item models.Action, index int) string {
-						return item.Id
-					})...))
-
-					diffVersionsIds = lo.Uniq(append(diffVersionsIds, lo.Map(diffVersionsActions, func(item models.Action, index int) string {
-						return item.Id
-					})...))
-
-					// An overall number of the steps that would have to be updated to ensure consistency between the workflows
-					// This includes those that have version drift and those that have similar config
-					uniqueActions = lo.Uniq(append(similarConfigIds, diffVersionsIds...))
-				}
-			}
+			// An overall number of the steps that would have to be updated to ensure consistency between the workflows
+			// This includes those that have version drift and those that have similar config
+			uniqueActions := lo.Uniq(append(similarConfigIds, diffVersionsIds...))
 
 			if _, ok := report.Comparisons[repo1]; !ok {
 				report.Comparisons[repo1] = make(map[string]models.RepoMeasurements)
@@ -168,6 +138,40 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 	report.UniqueContributors = lo.Uniq(flattenedContributors)
 
 	return report
+}
+
+func GetActionsWithVersionDriftAndDuplication(actionsList1 [][]models.Action, actionsList2 [][]models.Action) ([]string, []string, []string, []string) {
+	// The unique list of uses values that identity the kinds of steps that have version drift
+	stepsWithDifferentVersions := []string{}
+	// The unique list of uses values that identity the kinds of steps that have similar config
+	stepsWithSimilarConfig := []string{}
+
+	diffVersionsIds := []string{}
+	similarConfigIds := []string{}
+
+	for _, actions1 := range actionsList1 {
+		for _, actions2 := range actionsList2 {
+			diffVersionsActions, diffVersions := FindActionsWithDifferentVersions(actions1, actions2)
+			similarConfigsActions, similarConfigs := FindActionsWithSimilarConfigurations(actions1, actions2)
+
+			// Generate a list of all the "uses" values for steps with different versions and similar config, ensuring uniqueness
+			// This provides a quick way to identify the kinds of steps that are contributing to duplication or drift
+			stepsWithDifferentVersions = lo.Uniq(append(stepsWithDifferentVersions, diffVersions...))
+			stepsWithSimilarConfig = lo.Uniq(append(stepsWithSimilarConfig, similarConfigs...))
+
+			// Generate a list of all the action IDs for steps with different versions and similar config
+			// This provides a complete list of steps that would have to be updated to ensure consistency between the workflows
+			similarConfigIds = lo.Uniq(append(similarConfigIds, lo.Map(similarConfigsActions, func(item models.Action, index int) string {
+				return item.Id
+			})...))
+
+			diffVersionsIds = lo.Uniq(append(diffVersionsIds, lo.Map(diffVersionsActions, func(item models.Action, index int) string {
+				return item.Id
+			})...))
+		}
+	}
+
+	return stepsWithDifferentVersions, diffVersionsIds, stepsWithSimilarConfig, similarConfigIds
 }
 
 // CountReposWithDuplicationOrDrift counts the number of repositories that have duplication or drift.
