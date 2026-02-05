@@ -28,7 +28,7 @@ WORKDIR /app
 COPY --from=builder /app/main .
 
 # Copy HTML files and other static assets
-COPY index.html calculate.html repos.html ./
+COPY html/ ./html/
 
 # Copy images directory
 COPY images/ ./images/
