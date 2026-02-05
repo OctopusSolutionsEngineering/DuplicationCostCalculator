@@ -1,5 +1,5 @@
 # Consistent Change Cost Analysis
-![Coverage](https://img.shields.io/badge/Coverage-70.8%25-brightgreen)
+![Coverage](https://img.shields.io/badge/Coverage-73.1%25-brightgreen)
 
 This app inspects the actions defined in GitHub workflows across multiple repositories to identify those that have
 version drift or duplicate actions.
