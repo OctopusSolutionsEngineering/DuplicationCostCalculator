@@ -37,6 +37,10 @@ func FindWorkflows(client *github.Client, repo string) []string {
 }
 
 func WorkflowToString(client *github.Client, repo string, workflow string) string {
+	if client == nil {
+		return ""
+	}
+
 	ctx := context.Background()
 
 	owner, repoName, err := parsing.SplitRepo(repo)
@@ -60,6 +64,10 @@ func WorkflowToString(client *github.Client, repo string, workflow string) strin
 }
 
 func FindContributorsToWorkflow(client *github.Client, repo string, workflow string) []string {
+	if client == nil {
+		return []string{}
+	}
+
 	ctx := context.Background()
 
 	// Split repo into owner and name
@@ -111,6 +119,10 @@ func FindContributorsToWorkflow(client *github.Client, repo string, workflow str
 }
 
 func GetWorkflowAdvisories(client *github.Client, repo string) []string {
+	if client == nil {
+		return []string{}
+	}
+
 	ctx := context.Background()
 
 	owner, repoName, err := parsing.SplitRepo(repo)
