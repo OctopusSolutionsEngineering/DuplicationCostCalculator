@@ -119,18 +119,20 @@
 
             // If we have results, clear the document and show the results table
             if (results) {
+                const hasComparisons = results.comparisons && Object.keys(results.comparisons).length > 0;
+
                 return h('div', { className: 'container-fluid mt-4 mb-5' },
 
-                    h('h1', { className: 'mb-4' }, 'Consistent Change Cost Analysis'),
+                    hasComparisons && h('h1', { className: 'mb-4' }, 'Consistent Change Cost Analysis'),
 
                     // Warning if comparisons is empty
-                    (!results.comparisons || Object.keys(results.comparisons).length === 0) && h('div', { className: 'alert alert-warning' },
+                    !hasComparisons && h('div', { className: 'alert alert-warning' },
                         h('h4', { className: 'alert-heading' }, 'No Workflow Data Available'),
                         h('p', { className: 'mb-0' }, 'The repositories you selected either do not have workflows, or are private and require the GitHub app to be ',
                         h('a', { href: 'https://github.com/apps/workflowduplicationcost', target: '_blank', rel: 'noopener noreferrer'}, 'installed.'))
                     ),
 
-                    h('div', { className: 'alert alert-info mt-4' },
+                    hasComparisons && h('div', { className: 'alert alert-info mt-4' },
                         h('h3', { className: 'mb-0' },
                             'Learn how ',
                             h('a', { href: 'https://octopus.com/use-case/platform-hub', target: '_blank', rel: 'noopener noreferrer' }, 'Octopus Deploy Platform Hub'),
@@ -139,7 +141,7 @@
                     ),
 
                     // Matrix Table
-                    h('div', { className: 'table-responsive' },
+                    hasComparisons && h('div', { className: 'table-responsive' },
                         (() => {
                             // Get all unique repository names
                             const allRepos = Object.keys(results.comparisons || {});
@@ -261,7 +263,7 @@
 
 
 
-                    h('div', { className: 'row mb-4' },
+                    hasComparisons && h('div', { className: 'row mb-4' },
                         h('div', { className: 'col-md-6 mb-3' },
                             h('label', { className: 'form-label fw-bold' }, 'Hours to make a consistent change per repo:'),
                             h('input', {
@@ -286,13 +288,13 @@
                         )
                     ),
 
-                    h('div', { className: 'alert alert-success' },
+                    hasComparisons && h('div', { className: 'alert alert-success' },
                         h('h5', { className: 'mb-2' }, 'Cost to make a consistent change:'),
                         h('h3', { className: 'mb-0' },
                             `$${(results.numberOfReposWithDuplicationOrDrift * hours * (salary / 365 / 8)).toFixed(2)}`
                         )
                     ),
-                    h('div', { className: 'alert alert-light mt-4' },
+                    hasComparisons && h('div', { className: 'alert alert-light mt-4' },
                         h('p', { className: 'mb-3' },
                             'A "consistent change" is any change to an action (such as a version or configuration change) in a GitHub Workflow that must be replicated consistently in other workflows.'
                         ),
