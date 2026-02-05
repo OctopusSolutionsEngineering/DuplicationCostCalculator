@@ -123,6 +123,12 @@
 
                     h('h1', { className: 'mb-4' }, 'Consistent Change Cost Analysis'),
 
+                    // Warning if comparisons is empty
+                    (!results.comparisons || Object.keys(results.comparisons).length === 0) && h('div', { className: 'alert alert-warning' },
+                        h('h4', { className: 'alert-heading' }, 'No Workflow Data Available'),
+                        h('p', { className: 'mb-0' }, 'The repositories you selected either do not have workflows, or require additional authorization to access.')
+                    ),
+
                     h('div', { className: 'alert alert-info mt-4' },
                         h('h3', { className: 'mb-0' },
                             'Learn how ',
