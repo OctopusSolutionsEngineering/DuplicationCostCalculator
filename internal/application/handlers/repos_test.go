@@ -271,7 +271,7 @@ func TestReposHandlerWithDifferentTokens(t *testing.T) {
 }
 
 func TestReposHandlerAuthenticationIntegration(t *testing.T) {
-	// Integration test to verify ReposHandler properly uses RequireAuth
+	// Integration test to verify ReposHandler properly uses IsAuthenticated
 	gin.SetMode(gin.TestMode)
 
 	testCases := []struct {

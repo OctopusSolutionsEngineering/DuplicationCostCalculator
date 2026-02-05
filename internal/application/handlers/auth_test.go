@@ -120,12 +120,12 @@ func TestRequireAuth(t *testing.T) {
 
 			c.Request = req
 
-			// Call RequireAuth
-			result := RequireAuth(c)
+			// Call IsAuthenticated
+			result := IsAuthenticated(c)
 
 			// Check the result
 			if result != tt.expectedResult {
-				t.Errorf("RequireAuth() = %v, expected %v", result, tt.expectedResult)
+				t.Errorf("IsAuthenticated() = %v, expected %v", result, tt.expectedResult)
 			}
 
 			// Check redirect if authentication failed
@@ -153,10 +153,10 @@ func TestRequireAuthNoCookie(t *testing.T) {
 	req := httptest.NewRequest("GET", "/test", nil)
 	c.Request = req
 
-	result := RequireAuth(c)
+	result := IsAuthenticated(c)
 
 	if result != false {
-		t.Errorf("RequireAuth() with no cookie = %v, expected false", result)
+		t.Errorf("IsAuthenticated() with no cookie = %v, expected false", result)
 	}
 
 	if w.Code != http.StatusFound {
@@ -213,10 +213,10 @@ func TestRequireAuthPreservesReposParam(t *testing.T) {
 			}
 			c.Request = req
 
-			result := RequireAuth(c)
+			result := IsAuthenticated(c)
 
 			if result != false {
-				t.Errorf("RequireAuth() = %v, expected false", result)
+				t.Errorf("IsAuthenticated() = %v, expected false", result)
 			}
 
 			location := w.Header().Get("Location")
@@ -251,10 +251,10 @@ func TestRequireAuthWithValidToken(t *testing.T) {
 			})
 			c.Request = req
 
-			result := RequireAuth(c)
+			result := IsAuthenticated(c)
 
 			if result != true {
-				t.Errorf("RequireAuth() with token %q = false, expected true", token)
+				t.Errorf("IsAuthenticated() with token %q = false, expected true", token)
 			}
 
 			// Should not redirect
@@ -266,7 +266,7 @@ func TestRequireAuthWithValidToken(t *testing.T) {
 }
 
 func TestRequireAuthConsistency(t *testing.T) {
-	// Test that calling RequireAuth multiple times with the same context produces consistent results
+	// Test that calling IsAuthenticated multiple times with the same context produces consistent results
 	gin.SetMode(gin.TestMode)
 
 	w := httptest.NewRecorder()
@@ -279,24 +279,24 @@ func TestRequireAuthConsistency(t *testing.T) {
 	})
 	c.Request = req
 
-	result1 := RequireAuth(c)
+	result1 := IsAuthenticated(c)
 
 	// Reset the writer for the second call
 	w = httptest.NewRecorder()
 	c, _ = gin.CreateTestContext(w)
 	c.Request = req
 
-	result2 := RequireAuth(c)
+	result2 := IsAuthenticated(c)
 
 	// Reset again for the third call
 	w = httptest.NewRecorder()
 	c, _ = gin.CreateTestContext(w)
 	c.Request = req
 
-	result3 := RequireAuth(c)
+	result3 := IsAuthenticated(c)
 
 	if result1 != result2 || result2 != result3 {
-		t.Errorf("RequireAuth() produced inconsistent results: %v, %v, %v", result1, result2, result3)
+		t.Errorf("IsAuthenticated() produced inconsistent results: %v, %v, %v", result1, result2, result3)
 	}
 
 	if !result1 || !result2 || !result3 {

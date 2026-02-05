@@ -262,7 +262,7 @@ func TestCalculateWithDifferentTokens(t *testing.T) {
 }
 
 func TestCalculateAuthenticationIntegration(t *testing.T) {
-	// Integration test to verify Calculate properly uses RequireAuth
+	// Integration test to verify Calculate properly uses IsAuthenticated
 	gin.SetMode(gin.TestMode)
 
 	testCases := []struct {

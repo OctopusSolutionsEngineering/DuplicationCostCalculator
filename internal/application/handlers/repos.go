@@ -5,7 +5,7 @@ import (
 )
 
 func ReposHandler(c *gin.Context) {
-	if !RequireAuth(c) {
+	if !IsAuthenticated(c) {
 		return
 	}
 

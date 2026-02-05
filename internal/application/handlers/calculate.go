@@ -5,7 +5,7 @@ import (
 )
 
 func Calculate(c *gin.Context) {
-	if !RequireAuth(c) {
+	if !IsAuthenticated(c) {
 		return
 	}
 
