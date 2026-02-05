@@ -30,6 +30,9 @@ COPY --from=builder /app/main .
 # Copy HTML files and other static assets
 COPY index.html calculate.html repos.html ./
 
+# Set Gin to run in production mode
+ENV GIN_MODE=release
+
 # Expose port 8080
 EXPOSE 8080
 
