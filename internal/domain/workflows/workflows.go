@@ -34,18 +34,16 @@ func GenerateReport(client *github.Client, repos []string) models.Report {
 	for _, repo := range repos {
 		// Get the workflows in a goroutine
 		go func(client *github.Client, repo string) {
-			workflows := []string{}
-			contributors := []string{}
+
 			advisories := githubapi.GetWorkflowAdvisories(client, repo)
 			workflowFiles := githubapi.FindWorkflows(client, repo)
-
-			for _, workflowFile := range workflowFiles {
-				workflowStr := githubapi.WorkflowToString(client, repo, workflowFile)
-				if workflowStr != "" {
-					workflows = append(workflows, workflowStr)
-				}
-				contributors = githubapi.FindContributorsToWorkflow(client, repo, workflowFile)
-			}
+			workflows := lo.FilterMap(workflowFiles, func(item string, index int) (string, bool) {
+				workflowStr := githubapi.WorkflowToString(client, repo, item)
+				return workflowStr, workflowStr != ""
+			})
+			contributors := lo.Uniq(lo.FlatMap(workflowFiles, func(item string, index int) []string {
+				return githubapi.FindContributorsToWorkflow(client, repo, item)
+			}))
 
 			// Split repo into owner and name
 			owner, repoName, err := parsing.SplitRepo(repo)
