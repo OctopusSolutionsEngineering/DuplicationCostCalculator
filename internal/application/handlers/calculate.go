@@ -10,5 +10,5 @@ func Calculate(c *gin.Context) {
 	}
 
 	// User is authenticated, show calculate page
-	c.File("calculate.html")
+	c.File("html/calculate.html")
 }

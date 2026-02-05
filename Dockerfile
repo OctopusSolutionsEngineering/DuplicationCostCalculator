@@ -30,6 +30,9 @@ COPY --from=builder /app/main .
 # Copy HTML files and other static assets
 COPY index.html calculate.html repos.html ./
 
+# Copy images directory
+COPY images/ ./images/
+
 # Set Gin to run in production mode
 ENV GIN_MODE=release
 

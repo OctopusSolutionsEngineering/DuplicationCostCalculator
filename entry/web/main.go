@@ -11,6 +11,8 @@ func main() {
 	// Serve index.html at root path
 	r.GET("/", handlers2.Login)
 
+	r.GET("/favicon.ico", handlers2.IconHandler)
+
 	r.GET("/repos", handlers2.ReposHandler)
 
 	r.GET("/calculate", handlers2.Calculate)

@@ -33,5 +33,5 @@ func Login(c *gin.Context) {
 	}
 
 	// User is not authenticated, show login page
-	c.File("index.html")
+	c.File("html/index.html")
 }

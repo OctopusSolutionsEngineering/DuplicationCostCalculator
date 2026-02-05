@@ -10,5 +10,5 @@ func ReposHandler(c *gin.Context) {
 	}
 
 	// User is authenticated, show repos page
-	c.File("repos.html")
+	c.File("html/repos.html")
 }
