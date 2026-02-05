@@ -17,12 +17,12 @@ func SplitRepo(repo string) (string, string, error) {
 		return "", "", fmt.Errorf("invalid repository format: %s", repo)
 	}
 
-	return parts[0], parts[1], nil
+	return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]), nil
 }
 
 func SanitizeRepo(repo string) string {
 	value := strings.Replace(repo, "https://github.com/", "", 1)
 	value = strings.Replace(value, "github.com/", "", 1)
 	value = strings.Replace(value, ".git", "", 1)
-	return value
+	return strings.TrimSpace(value)
 }

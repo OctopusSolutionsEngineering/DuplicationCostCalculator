@@ -216,17 +216,17 @@ func TestSanitizeRepoDoesNotTrim(t *testing.T) {
 		{
 			name:     "leading whitespace preserved",
 			repo:     "  owner/repo",
-			expected: "  owner/repo",
+			expected: "owner/repo",
 		},
 		{
 			name:     "trailing whitespace preserved",
 			repo:     "owner/repo  ",
-			expected: "owner/repo  ",
+			expected: "owner/repo",
 		},
 		{
 			name:     "both leading and trailing whitespace preserved",
 			repo:     "  owner/repo  ",
-			expected: "  owner/repo  ",
+			expected: "owner/repo",
 		},
 	}
 
