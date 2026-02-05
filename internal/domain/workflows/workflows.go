@@ -47,8 +47,14 @@ func GenerateReport(client *github.Client, repos []string) models.Report {
 				contributors = githubapi.FindContributorsToWorkflow(client, repo, workflowFile)
 			}
 
+			// Split repo into owner and name
+			owner, repoName, err := parsing.SplitRepo(repo)
+			if err != nil {
+				owner, repoName = "", ""
+			}
+
 			result <- RepoActions{
-				Repo:               repo,
+				Repo:               owner + "/" + repoName,
 				Workflows:          workflows,
 				Contributors:       contributors,
 				WorkflowAdvisories: advisories,

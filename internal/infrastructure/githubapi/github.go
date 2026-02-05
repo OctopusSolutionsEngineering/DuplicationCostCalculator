@@ -39,12 +39,10 @@ func FindWorkflows(client *github.Client, repo string) []string {
 func WorkflowToString(client *github.Client, repo string, workflow string) string {
 	ctx := context.Background()
 
-	// Split repo into owner and name
-	parts := strings.Split(repo, "/")
-	if len(parts) != 2 {
+	owner, repoName, err := parsing.SplitRepo(repo)
+	if err != nil {
 		return ""
 	}
-	owner, repoName := parts[0], parts[1]
 
 	// Get file content
 	fileContent, _, _, err := client.Repositories.GetContents(ctx, owner, repoName, ".github/workflows/"+workflow, nil)
@@ -65,11 +63,10 @@ func FindContributorsToWorkflow(client *github.Client, repo string, workflow str
 	ctx := context.Background()
 
 	// Split repo into owner and name
-	parts := strings.Split(repo, "/")
-	if len(parts) != 2 {
+	owner, repoName, err := parsing.SplitRepo(repo)
+	if err != nil {
 		return []string{}
 	}
-	owner, repoName := parts[0], parts[1]
 
 	// Construct the workflow file path
 	workflowPath := ".github/workflows/" + workflow
