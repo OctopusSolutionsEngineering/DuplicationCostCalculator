@@ -13,6 +13,36 @@
         import { h, render } from 'https://esm.sh/preact';
         import { useState } from 'https://esm.sh/preact/hooks';
 
+        async function GetCost(attempt, repositories, setError, setResults) {
+            if (attempt >= 3) {
+                setError('Failed to calculate cost after multiple attempts');
+                return;
+            }
+
+            try {
+                const response = await fetch('/cost', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        repositories: repositories
+                    }),
+                    credentials: 'include' // Include cookies
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to calculate cost');
+                }
+
+                const result = await response.json();
+                setResults(result);
+            } catch (err) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                await GetCost(attempt + 1, repositories, setError, setResults);
+            }
+        }
+
         function CalculatePage() {
             // Parse query string for repos parameter
             const urlParams = new URLSearchParams(window.location.search);
@@ -47,26 +77,7 @@
                 setError('');
 
                 try {
-                    const response = await fetch('/cost', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            repositories: repositories
-                        }),
-                        credentials: 'include' // Include cookies
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Failed to calculate cost');
-                    }
-
-                    const result = await response.json();
-                    setResults(result);
-
-                } catch (err) {
-                    setError(err.message);
+                    await GetCost(0, repositories, setError, setResults);
                 } finally {
                     setIsLoading(false);
                 }
