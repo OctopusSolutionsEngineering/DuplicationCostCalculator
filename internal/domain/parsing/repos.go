@@ -20,6 +20,15 @@ func SplitRepo(repo string) (string, string, error) {
 	return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]), nil
 }
 
+func SplitRepoNoErr(repo string) (string, string) {
+	owner, repoName, err := SplitRepo(repo)
+	if err != nil {
+		return "", ""
+	}
+
+	return owner, repoName
+}
+
 func SanitizeRepo(repo string) string {
 	value := strings.Replace(repo, "https://github.com/", "", 1)
 	value = strings.Replace(value, "github.com/", "", 1)

@@ -46,10 +46,7 @@ func GenerateReport(client *github.Client, repos []string) models.Report {
 			}))
 
 			// Split repo into owner and name
-			owner, repoName, err := parsing.SplitRepo(repo)
-			if err != nil {
-				owner, repoName = "", ""
-			}
+			owner, repoName := parsing.SplitRepoNoErr(repo)
 
 			result <- RepoActions{
 				Repo:               owner + "/" + repoName,
