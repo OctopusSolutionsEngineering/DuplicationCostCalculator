@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/encryption"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/models"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/workflows"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/infrastructure/client"
@@ -28,14 +27,7 @@ func CostHandlerWrapped(c *gin.Context, getClient func(string) *github.Client, g
 			return
 		}
 
-		accessToken, err = encryption.DecryptString(token)
-
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Unauthorized - no access token found",
-			})
-			return
-		}
+		accessToken = token
 	}
 
 	// Parse request body
