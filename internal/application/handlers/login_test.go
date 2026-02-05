@@ -148,14 +148,22 @@ func TestLoginFileServing(t *testing.T) {
 	// Test that the Login handler attempts to serve the correct file
 	gin.SetMode(gin.TestMode)
 
+	// Create the html directory if it doesn't exist
+	tempDir := "html"
+	err := os.MkdirAll(tempDir, 0755)
+	if err != nil {
+		t.Fatalf("Failed to create html directory: %v", err)
+	}
+
 	// Create a temporary index.html file for testing
-	tempFile := "index.html"
+	tempFile := "html/index.html"
 	content := []byte("<html><body>Test Login Page</body></html>")
-	err := os.WriteFile(tempFile, content, 0644)
+	err = os.WriteFile(tempFile, content, 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 	defer os.Remove(tempFile)
+	defer os.RemoveAll(tempDir)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)

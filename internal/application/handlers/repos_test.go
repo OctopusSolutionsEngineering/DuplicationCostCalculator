@@ -150,14 +150,21 @@ func TestReposHandlerFileServing(t *testing.T) {
 	// Test that the ReposHandler attempts to serve the correct file
 	gin.SetMode(gin.TestMode)
 
+	tempDir := "html"
+	err := os.MkdirAll(tempDir, 0755)
+	if err != nil {
+		t.Fatalf("Failed to create html directory: %v", err)
+	}
+
 	// Create a temporary repos.html file for testing
-	tempFile := "repos.html"
+	tempFile := "html/repos.html"
 	content := []byte("<html><body>Test Repos Page</body></html>")
-	err := os.WriteFile(tempFile, content, 0644)
+	err = os.WriteFile(tempFile, content, 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 	defer os.Remove(tempFile)
+	defer os.RemoveAll(tempDir)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
