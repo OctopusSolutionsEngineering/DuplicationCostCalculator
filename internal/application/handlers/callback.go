@@ -69,7 +69,7 @@ func CallbackHandlerWrapped(
 		3600,                      // max age (1 hour)
 		"/",                       // path
 		"",                        // domain (empty = current domain)
-		false,                     // secure (set to true in production with HTTPS)
+		true,                      // secure (set to true in production with HTTPS)
 		true,                      // httpOnly
 	)
 
