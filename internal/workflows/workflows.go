@@ -7,12 +7,14 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/collections"
 	"github.com/google/go-github/v57/github"
 	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
 )
 
 const HighSimilarity = 30
+const BuiltInStep = "(built-in step)"
 
 type RepoActions struct {
 	Repo               string
@@ -150,8 +152,20 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 	}
 
 	// Count the number of repositories that have duplication or drift
-	// A repo has duplication or drift if any of its comparisons indicate steps that would need to be updated
-	allComparisons := lo.Values(report.Comparisons)
+	report.NumberOfReposWithDuplicationOrDrift = CountReposWithDuplicationOrDrift(report.Comparisons)
+
+	// Get all unique contributors across all repositories
+	allContributorLists := lo.Values(report.Contributors)
+	flattenedContributors := lo.Flatten(allContributorLists)
+	report.UniqueContributors = lo.Uniq(flattenedContributors)
+
+	return report
+}
+
+// CountReposWithDuplicationOrDrift counts the number of repositories that have duplication or drift.
+// A repo has duplication or drift if any of its comparisons indicate steps that would need to be updated.
+func CountReposWithDuplicationOrDrift(comparisons map[string]map[string]RepoMeasurements) int {
+	allComparisons := lo.Values(comparisons)
 	reposWithDuplicationOrDrift := lo.Filter(allComparisons, func(repoComparisons map[string]RepoMeasurements, index int) bool {
 		// Get all measurements for this repo's comparisons
 		measurements := lo.Values(repoComparisons)
@@ -162,14 +176,7 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 		// If there's at least one comparison with risk, this repo has duplication or drift
 		return len(measurementsWithRisk) > 0
 	})
-	report.NumberOfReposWithDuplicationOrDrift = len(reposWithDuplicationOrDrift)
-
-	// Get all unique contributors across all repositories
-	allContributorLists := lo.Values(report.Contributors)
-	flattenedContributors := lo.Flatten(allContributorLists)
-	report.UniqueContributors = lo.Uniq(flattenedContributors)
-
-	return report
+	return len(reposWithDuplicationOrDrift)
 }
 
 func convertWorkflowToActionsMap(workflows map[string][]string) map[string][][]Action {
@@ -348,15 +355,15 @@ func ParseWorkflow(workflow string, workflowId int) []Action {
 				continue
 			}
 
-			uses := getStringProperty(stepMap, "uses")
+			uses := collections.GetStringProperty(stepMap, "uses")
 
 			// Split uses into action and version
-			actionName, actionVersion := getActionIdAndVersion(uses)
+			actionName, actionVersion := GetActionIdAndVersion(uses)
 
 			// Get the various settings for the action
-			env := convertStringMap(getChildMap(stepMap, "env"))
-			with := convertStringMap(getChildMap(stepMap, "with"))
-			settings := getOtherValues(stepMap, []string{"uses", "env", "with"})
+			env := collections.ConvertStringMap(collections.GetChildMap(stepMap, "env"))
+			with := collections.ConvertStringMap(collections.GetChildMap(stepMap, "with"))
+			settings := collections.GetOtherValues(stepMap, []string{"uses", "env", "with"})
 
 			action := Action{
 				Id:          fmt.Sprintf("%d-%d", workflowId, actionId),
@@ -376,68 +383,6 @@ func ParseWorkflow(workflow string, workflowId int) []Action {
 	return actions
 }
 
-func getActionIdAndVersion(uses string) (string, string) {
-	if strings.Contains(uses, "@") {
-		parts := strings.SplitN(uses, "@", 2)
-		return parts[0], parts[1]
-	} else {
-		return uses, "latest"
-	}
-}
-
-func getOtherValues(input map[string]interface{}, excludeKeys []string) map[string]string {
-	result := make(map[string]string)
-	excludeMap := make(map[string]bool)
-	for _, key := range excludeKeys {
-		excludeMap[key] = true
-	}
-
-	for key, value := range input {
-		if !excludeMap[key] {
-			result[key] = fmt.Sprintf("%v", value)
-		}
-	}
-
-	return result
-}
-
-func getStringProperty(input map[string]interface{}, key string) string {
-	usesInterface, ok := input[key]
-	if ok {
-		usesString, ok := usesInterface.(string)
-		if ok {
-			// Script steps often don't have a 'uses' field
-			return usesString
-		}
-	}
-
-	return ""
-}
-
-func getChildMap(input map[string]interface{}, key string) map[string]interface{} {
-	childInterface, ok := input[key]
-	if !ok {
-		return nil
-	}
-	childMap, ok := childInterface.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-	return childMap
-}
-
-func convertStringMap(input map[string]interface{}) map[string]string {
-	if input == nil {
-		return nil
-	}
-
-	result := make(map[string]string)
-	for key, value := range input {
-		result[key] = fmt.Sprintf("%v", value)
-	}
-	return result
-}
-
 func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) ([]Action, []string) {
 	actions := []Action{}
 	result := []string{}
@@ -445,7 +390,7 @@ func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) ([]A
 	for _, action1 := range actions1 {
 		for _, action2 := range actions2 {
 
-			if action1.Uses != "" && action1.UsesVersion != "" && action2.UsesVersion != "" && action1.Uses == action2.Uses && action1.UsesVersion != action2.UsesVersion {
+			if HasVersionDrift(action1, action2) {
 				if !lo.ContainsBy(actions, func(item Action) bool {
 					return item.Id == action1.Id
 				}) {
@@ -494,7 +439,7 @@ func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) 
 
 						uses := action1.Uses
 						if uses == "" {
-							uses = "(built-in step)"
+							uses = BuiltInStep
 						}
 
 						if !slices.Contains(result, uses) {
@@ -573,7 +518,7 @@ func GetActionAuthorsFromActionsList(actionsList [][]Action) []string {
 		split := strings.Split(item.Uses, "/")
 		if len(split) > 0 {
 			if split[0] == "" {
-				return "(built-in step)", true
+				return BuiltInStep, true
 			}
 			return split[0], true
 		}

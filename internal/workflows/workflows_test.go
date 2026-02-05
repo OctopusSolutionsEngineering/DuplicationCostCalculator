@@ -5,6 +5,372 @@ import (
 	"testing"
 )
 
+func TestCountReposWithDuplicationOrDrift(t *testing.T) {
+	tests := []struct {
+		name        string
+		comparisons map[string]map[string]RepoMeasurements
+		expected    int
+	}{
+		{
+			name:        "empty comparisons",
+			comparisons: map[string]map[string]RepoMeasurements{},
+			expected:    0,
+		},
+		{
+			name: "no duplication or drift",
+			comparisons: map[string]map[string]RepoMeasurements{
+				"repo1": {
+					"repo2": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 0,
+					},
+				},
+				"repo2": {
+					"repo1": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 0,
+					},
+				},
+			},
+			expected: 0,
+		},
+		{
+			name: "one repo with duplication",
+			comparisons: map[string]map[string]RepoMeasurements{
+				"repo1": {
+					"repo2": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 5,
+					},
+				},
+				"repo2": {
+					"repo1": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 5,
+					},
+				},
+			},
+			expected: 2,
+		},
+		{
+			name: "multiple repos with duplication",
+			comparisons: map[string]map[string]RepoMeasurements{
+				"repo1": {
+					"repo2": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 3,
+					},
+					"repo3": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 2,
+					},
+				},
+				"repo2": {
+					"repo1": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 3,
+					},
+					"repo3": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 1,
+					},
+				},
+				"repo3": {
+					"repo1": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 2,
+					},
+					"repo2": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 1,
+					},
+				},
+			},
+			expected: 3,
+		},
+		{
+			name: "mixed - some with duplication, some without",
+			comparisons: map[string]map[string]RepoMeasurements{
+				"repo1": {
+					"repo2": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 5,
+					},
+					"repo3": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 0,
+					},
+				},
+				"repo2": {
+					"repo1": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 5,
+					},
+					"repo3": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 0,
+					},
+				},
+				"repo3": {
+					"repo1": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 0,
+					},
+					"repo2": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 0,
+					},
+				},
+			},
+			expected: 2,
+		},
+		{
+			name: "single comparison with duplication",
+			comparisons: map[string]map[string]RepoMeasurements{
+				"repo1": {
+					"repo2": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 10,
+					},
+				},
+			},
+			expected: 1,
+		},
+		{
+			name: "repo with multiple comparisons, only one has duplication",
+			comparisons: map[string]map[string]RepoMeasurements{
+				"repo1": {
+					"repo2": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 0,
+					},
+					"repo3": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 0,
+					},
+					"repo4": RepoMeasurements{
+						StepsThatIndicateDuplicationRisk: 1,
+					},
+				},
+			},
+			expected: 1,
+		},
+		{
+			name: "large number of repos with varying duplication",
+			comparisons: map[string]map[string]RepoMeasurements{
+				"repo1": {
+					"repo2": RepoMeasurements{StepsThatIndicateDuplicationRisk: 10},
+					"repo3": RepoMeasurements{StepsThatIndicateDuplicationRisk: 5},
+					"repo4": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo5": RepoMeasurements{StepsThatIndicateDuplicationRisk: 8},
+				},
+				"repo2": {
+					"repo1": RepoMeasurements{StepsThatIndicateDuplicationRisk: 10},
+					"repo3": RepoMeasurements{StepsThatIndicateDuplicationRisk: 3},
+					"repo4": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo5": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+				},
+				"repo3": {
+					"repo1": RepoMeasurements{StepsThatIndicateDuplicationRisk: 5},
+					"repo2": RepoMeasurements{StepsThatIndicateDuplicationRisk: 3},
+					"repo4": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo5": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+				},
+				"repo4": {
+					"repo1": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo2": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo3": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo5": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+				},
+				"repo5": {
+					"repo1": RepoMeasurements{StepsThatIndicateDuplicationRisk: 8},
+					"repo2": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo3": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo4": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+				},
+			},
+			expected: 4, // repo1, repo2, repo3, repo5 all have at least one comparison with duplication
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := CountReposWithDuplicationOrDrift(tt.comparisons)
+			if result != tt.expected {
+				t.Errorf("CountReposWithDuplicationOrDrift() = %d, expected %d", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestHasVersionDrift(t *testing.T) {
+	tests := []struct {
+		name     string
+		action1  Action
+		action2  Action
+		expected bool
+	}{
+		{
+			name: "same action with different versions",
+			action1: Action{
+				Uses:        "actions/checkout",
+				UsesVersion: "v3",
+			},
+			action2: Action{
+				Uses:        "actions/checkout",
+				UsesVersion: "v4",
+			},
+			expected: true,
+		},
+		{
+			name: "same action with same versions",
+			action1: Action{
+				Uses:        "actions/checkout",
+				UsesVersion: "v3",
+			},
+			action2: Action{
+				Uses:        "actions/checkout",
+				UsesVersion: "v3",
+			},
+			expected: false,
+		},
+		{
+			name: "different actions with different versions",
+			action1: Action{
+				Uses:        "actions/checkout",
+				UsesVersion: "v3",
+			},
+			action2: Action{
+				Uses:        "actions/setup-node",
+				UsesVersion: "v4",
+			},
+			expected: false,
+		},
+		{
+			name: "action1 with empty Uses",
+			action1: Action{
+				Uses:        "",
+				UsesVersion: "v3",
+			},
+			action2: Action{
+				Uses:        "actions/checkout",
+				UsesVersion: "v4",
+			},
+			expected: false,
+		},
+		{
+			name: "action1 with empty UsesVersion",
+			action1: Action{
+				Uses:        "actions/checkout",
+				UsesVersion: "",
+			},
+			action2: Action{
+				Uses:        "actions/checkout",
+				UsesVersion: "v4",
+			},
+			expected: false,
+		},
+		{
+			name: "action2 with empty UsesVersion",
+			action1: Action{
+				Uses:        "actions/checkout",
+				UsesVersion: "v3",
+			},
+			action2: Action{
+				Uses:        "actions/checkout",
+				UsesVersion: "",
+			},
+			expected: false,
+		},
+		{
+			name: "both actions with empty Uses",
+			action1: Action{
+				Uses:        "",
+				UsesVersion: "v3",
+			},
+			action2: Action{
+				Uses:        "",
+				UsesVersion: "v4",
+			},
+			expected: false,
+		},
+		{
+			name: "both actions with empty UsesVersion",
+			action1: Action{
+				Uses:        "actions/checkout",
+				UsesVersion: "",
+			},
+			action2: Action{
+				Uses:        "actions/checkout",
+				UsesVersion: "",
+			},
+			expected: false,
+		},
+		{
+			name: "complex action names with different versions",
+			action1: Action{
+				Uses:        "docker/build-push-action",
+				UsesVersion: "v5.0.0",
+			},
+			action2: Action{
+				Uses:        "docker/build-push-action",
+				UsesVersion: "v5.1.0",
+			},
+			expected: true,
+		},
+		{
+			name: "action with version tags (SHA vs semver)",
+			action1: Action{
+				Uses:        "actions/checkout",
+				UsesVersion: "v3",
+			},
+			action2: Action{
+				Uses:        "actions/checkout",
+				UsesVersion: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+			},
+			expected: true,
+		},
+		{
+			name: "built-in steps (empty Uses) with different versions",
+			action1: Action{
+				Uses:        "",
+				UsesVersion: "latest",
+			},
+			action2: Action{
+				Uses:        "",
+				UsesVersion: "v1",
+			},
+			expected: false,
+		},
+		{
+			name: "action2 with empty Uses",
+			action1: Action{
+				Uses:        "actions/checkout",
+				UsesVersion: "v3",
+			},
+			action2: Action{
+				Uses:        "",
+				UsesVersion: "v4",
+			},
+			expected: false,
+		},
+		{
+			name: "version with different formats but same action",
+			action1: Action{
+				Uses:        "hashicorp/setup-terraform",
+				UsesVersion: "v2",
+			},
+			action2: Action{
+				Uses:        "hashicorp/setup-terraform",
+				UsesVersion: "2.0.3",
+			},
+			expected: true,
+		},
+		{
+			name: "latest vs specific version",
+			action1: Action{
+				Uses:        "actions/cache",
+				UsesVersion: "latest",
+			},
+			action2: Action{
+				Uses:        "actions/cache",
+				UsesVersion: "v3",
+			},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := HasVersionDrift(tt.action1, tt.action2)
+			if result != tt.expected {
+				t.Errorf("HasVersionDrift(%+v, %+v) = %v, expected %v", tt.action1, tt.action2, result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestParseWorkflow(t *testing.T) {
 	workflowYAML := `
 name: CI Pipeline
