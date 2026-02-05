@@ -3,6 +3,8 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/configuration"
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/encryption"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/models"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/workflows"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/infrastructure/client"
@@ -11,10 +13,10 @@ import (
 )
 
 func CostHandler(c *gin.Context) {
-	CostHandlerWrapped(c, client.GetClient, workflows.GenerateReport)
+	CostHandlerWrapped(c, client.GetClient, workflows.GenerateReport, configuration.GetEncryptionKey)
 }
 
-func CostHandlerWrapped(c *gin.Context, getClient func(string) *github.Client, generateReport func(*github.Client, []string) models.Report) {
+func CostHandlerWrapped(c *gin.Context, getClient func(string) *github.Client, generateReport func(*github.Client, []string) models.Report, getKey func() string) {
 	accessToken := ""
 
 	if !client.UsePrivateKeyAuth() {
@@ -27,7 +29,16 @@ func CostHandlerWrapped(c *gin.Context, getClient func(string) *github.Client, g
 			return
 		}
 
-		accessToken = token
+		decrypted, err := encryption.DecryptStringWrapper(token, getKey)
+
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Unauthorized - no access token found",
+			})
+			return
+		}
+
+		accessToken = decrypted
 	}
 
 	// Parse request body

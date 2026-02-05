@@ -15,6 +15,14 @@ func EncryptString(plainText string) (string, error) {
 	return EncryptStringWrapper(plainText, configuration.GetEncryptionKey)
 }
 
+func EncryptStringNoErr(plainText string, getKey func() string) string {
+	value, err := EncryptStringWrapper(plainText, getKey)
+	if err != nil {
+		return ""
+	}
+	return value
+}
+
 // EncryptString encrypts a plaintext string using AES-GCM symmetric encryption
 func EncryptStringWrapper(plainText string, getKey func() string) (string, error) {
 	key := getKey()
@@ -40,20 +48,28 @@ func EncryptStringWrapper(plainText string, getKey func() string) (string, error
 	// Encrypt the plaintext
 	ciphertext := gcm.Seal(nonce, nonce, []byte(plainText), nil)
 
-	// Encode to base64 for easy storage/transmission
-	return base64.StdEncoding.EncodeToString(ciphertext), nil
+	// Encode to unpadded URL-safe base64 for easy storage/transmission (avoids +, /, and = characters)
+	return base64.RawURLEncoding.EncodeToString(ciphertext), nil
 }
 
 func DecryptString(encryptedText string) (string, error) {
 	return DecryptStringWrapper(encryptedText, configuration.GetEncryptionKey)
 }
 
+func DecryptStringNoError(encryptedText string, getKey func() string) string {
+	value, err := DecryptStringWrapper(encryptedText, getKey)
+	if err != nil {
+		return ""
+	}
+	return value
+}
+
 // DecryptString decrypts a base64-encoded encrypted string using AES-GCM symmetric encryption
 func DecryptStringWrapper(encryptedText string, getKey func() string) (string, error) {
 	key := getKey()
 
-	// Decode from base64
-	ciphertext, err := base64.StdEncoding.DecodeString(encryptedText)
+	// Decode from unpadded URL-safe base64
+	ciphertext, err := base64.RawURLEncoding.DecodeString(encryptedText)
 	if err != nil {
 		return "", err
 	}

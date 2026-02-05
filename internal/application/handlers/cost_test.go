@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/encryption"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/v57/github"
@@ -27,7 +28,7 @@ func TestCostHandlerWrapped(t *testing.T) {
 	}{
 		{
 			name:        "successful request with valid token and repositories",
-			cookieValue: "valid-github-token",
+			cookieValue: encryption.EncryptStringNoErr("valid-github-token", getTestKey),
 			requestBody: map[string]interface{}{
 				"repositories": []string{"owner/repo1", "owner/repo2"},
 			},
@@ -55,7 +56,7 @@ func TestCostHandlerWrapped(t *testing.T) {
 		},
 		{
 			name:        "request with extra fields",
-			cookieValue: "valid-token",
+			cookieValue: encryption.EncryptStringNoErr("valid-token", getTestKey),
 			requestBody: map[string]interface{}{
 				"repositories": []string{"owner/repo"},
 				"invalid":      "data",
@@ -69,7 +70,7 @@ func TestCostHandlerWrapped(t *testing.T) {
 		},
 		{
 			name:        "empty repositories list",
-			cookieValue: "valid-token",
+			cookieValue: encryption.EncryptStringNoErr("valid-token", getTestKey),
 			requestBody: map[string]interface{}{
 				"repositories": []string{},
 			},
@@ -82,7 +83,7 @@ func TestCostHandlerWrapped(t *testing.T) {
 		},
 		{
 			name:        "single repository",
-			cookieValue: "valid-token",
+			cookieValue: encryption.EncryptStringNoErr("valid-token", getTestKey),
 			requestBody: map[string]interface{}{
 				"repositories": []string{"owner/repo"},
 			},
@@ -95,7 +96,7 @@ func TestCostHandlerWrapped(t *testing.T) {
 		},
 		{
 			name:        "multiple repositories with complex report",
-			cookieValue: "ghp_token123",
+			cookieValue: encryption.EncryptStringNoErr("ghp_token123", getTestKey),
 			requestBody: map[string]interface{}{
 				"repositories": []string{
 					"OctopusDeploy/OctopusDeploy",
@@ -169,7 +170,7 @@ func TestCostHandlerWrapped(t *testing.T) {
 			c.Request = req
 
 			// Call the handler
-			CostHandlerWrapped(c, mockGetClient, mockGenerateReport)
+			CostHandlerWrapped(c, mockGetClient, mockGenerateReport, getTestKey)
 
 			// Check status code
 			if w.Code != tt.expectedStatusCode {
@@ -211,8 +212,8 @@ func TestCostHandlerWrapped(t *testing.T) {
 				if !generateReportCalled {
 					t.Error("generateReport was not called")
 				}
-				if capturedAccessToken != tt.cookieValue {
-					t.Errorf("Access token = %q, expected %q", capturedAccessToken, tt.cookieValue)
+				if capturedAccessToken != encryption.DecryptStringNoError(tt.cookieValue, getTestKey) {
+					t.Errorf("Access token = %q, expected %q", capturedAccessToken, encryption.DecryptStringNoError(tt.cookieValue, getTestKey))
 				}
 				if repos, ok := tt.requestBody["repositories"].([]string); ok {
 					if len(capturedRepositories) != len(repos) {
@@ -275,7 +276,7 @@ func TestCostHandlerWrappedUnauthorized(t *testing.T) {
 
 			c.Request = req
 
-			CostHandlerWrapped(c, mockGetClient, mockGenerateReport)
+			CostHandlerWrapped(c, mockGetClient, mockGenerateReport, getTestKey)
 
 			if w.Code != http.StatusUnauthorized {
 				t.Errorf("Status code = %d, expected %d", w.Code, http.StatusUnauthorized)
@@ -328,12 +329,12 @@ func TestCostHandlerWrappedInvalidJSON(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			req.AddCookie(&http.Cookie{
 				Name:  "github_token",
-				Value: "valid-token",
+				Value: encryption.EncryptStringNoErr("valid-token", getTestKey),
 			})
 
 			c.Request = req
 
-			CostHandlerWrapped(c, mockGetClient, mockGenerateReport)
+			CostHandlerWrapped(c, mockGetClient, mockGenerateReport, getTestKey)
 
 			// Malformed JSON and empty body should return 400
 			// Wrong field types and null values are accepted by Gin as empty/zero values
@@ -385,12 +386,12 @@ func TestCostHandlerWrappedAccessTokenPassed(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			req.AddCookie(&http.Cookie{
 				Name:  "github_token",
-				Value: token,
+				Value: encryption.EncryptStringNoErr(token, getTestKey),
 			})
 
 			c.Request = req
 
-			CostHandlerWrapped(c, mockGetClient, mockGenerateReport)
+			CostHandlerWrapped(c, mockGetClient, mockGenerateReport, getTestKey)
 
 			if capturedToken != token {
 				t.Errorf("Captured token = %q, expected %q", capturedToken, token)
@@ -449,12 +450,12 @@ func TestCostHandlerWrappedRepositoriesPassed(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			req.AddCookie(&http.Cookie{
 				Name:  "github_token",
-				Value: "valid-token",
+				Value: encryption.EncryptStringNoErr("valid-token", getTestKey),
 			})
 
 			c.Request = req
 
-			CostHandlerWrapped(c, mockGetClient, mockGenerateReport)
+			CostHandlerWrapped(c, mockGetClient, mockGenerateReport, getTestKey)
 
 			if len(capturedRepos) != len(tt.repositories) {
 				t.Errorf("Captured %d repositories, expected %d", len(capturedRepos), len(tt.repositories))
@@ -516,12 +517,12 @@ func TestCostHandlerWrappedResponseFormat(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{
 		Name:  "github_token",
-		Value: "valid-token",
+		Value: encryption.EncryptStringNoErr("valid-token", getTestKey),
 	})
 
 	c.Request = req
 
-	CostHandlerWrapped(c, mockGetClient, mockGenerateReport)
+	CostHandlerWrapped(c, mockGetClient, mockGenerateReport, getTestKey)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("Status code = %d, expected %d", w.Code, http.StatusOK)
@@ -588,12 +589,12 @@ func TestCostHandlerWrappedMultipleCalls(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		req.AddCookie(&http.Cookie{
 			Name:  "github_token",
-			Value: "valid-token",
+			Value: encryption.EncryptStringNoErr("valid-token", getTestKey),
 		})
 
 		c.Request = req
 
-		CostHandlerWrapped(c, mockGetClient, mockGenerateReport)
+		CostHandlerWrapped(c, mockGetClient, mockGenerateReport, getTestKey)
 
 		if w.Code != http.StatusOK {
 			t.Errorf("Call %d: status code = %d, expected %d", i+1, w.Code, http.StatusOK)

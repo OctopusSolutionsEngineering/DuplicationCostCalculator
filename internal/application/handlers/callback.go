@@ -4,19 +4,21 @@ import (
 	"net/http"
 
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/configuration"
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/encryption"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/infrastructure/oauth"
 	"github.com/gin-gonic/gin"
 )
 
 func CallbackHandler(c *gin.Context) {
-	CallbackHandlerWrapped(c, oauth.ExchangeCodeForToken, configuration.GetClientId, configuration.GetClientSecret)
+	CallbackHandlerWrapped(c, oauth.ExchangeCodeForToken, configuration.GetClientId, configuration.GetClientSecret, configuration.GetEncryptionKey)
 }
 
 func CallbackHandlerWrapped(
 	c *gin.Context,
 	oauthTokenExchange func(string, string, string, string) (oauth.TokenResponse, error),
 	clientIdSetting func() string,
-	clientSecretSetting func() string) {
+	clientSecretSetting func() string,
+	getKey func() string) {
 	code := c.Query("code")
 	state := c.Query("state")
 
@@ -64,15 +66,24 @@ func CallbackHandlerWrapped(
 
 	c.SetSameSite(http.SameSiteStrictMode)
 
+	encrypted, err := encryption.EncryptStringWrapper(tokenResponse.AccessToken, getKey)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "No access token received",
+		})
+		return
+	}
+
 	// Set access token in HTTP-only cookie
 	c.SetCookie(
-		"github_token",            // name
-		tokenResponse.AccessToken, // value
-		3600,                      // max age (1 hour)
-		"/",                       // path
-		"",                        // domain (empty = current domain)
-		true,                      // secure (set to true in production with HTTPS)
-		true,                      // httpOnly
+		"github_token", // name
+		encrypted,      // value
+		3600,           // max age (1 hour)
+		"/",            // path
+		"",             // domain (empty = current domain)
+		true,           // secure (set to true in production with HTTPS)
+		true,           // httpOnly
 	)
 
 	// Redirect to repos page with repos query param if state was provided

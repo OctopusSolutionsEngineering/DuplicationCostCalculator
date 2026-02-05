@@ -6,9 +6,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/encryption"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/infrastructure/oauth"
 	"github.com/gin-gonic/gin"
 )
+
+func getTestKey() string {
+	// return 32 chars for testing purposes
+	return "PtBryEFj9MPJRT6VLZzpmGrpyGrMsAVF"
+}
 
 func TestCallbackHandlerWrapped(t *testing.T) {
 	// Set Gin to test mode
@@ -162,7 +168,7 @@ func TestCallbackHandlerWrapped(t *testing.T) {
 			clientID:     "client-id",
 			clientSecret: "client-secret",
 			tokenResponse: oauth.TokenResponse{
-				AccessToken: "ghp_longtoken123456789",
+				AccessToken: encryption.EncryptStringNoErr("ghp_longtoken123456789", getTestKey),
 			},
 			tokenError:         nil,
 			expectedStatusCode: http.StatusFound,
@@ -220,7 +226,7 @@ func TestCallbackHandlerWrapped(t *testing.T) {
 			c.Request = req
 
 			// Call the handler
-			CallbackHandlerWrapped(c, mockOAuthExchange, mockClientID, mockClientSecret)
+			CallbackHandlerWrapped(c, mockOAuthExchange, mockClientID, mockClientSecret, getTestKey)
 
 			// Check status code
 			if w.Code != tt.expectedStatusCode {
@@ -242,8 +248,8 @@ func TestCallbackHandlerWrapped(t *testing.T) {
 				for _, cookie := range cookies {
 					if cookie.Name == "github_token" {
 						found = true
-						if cookie.Value != tt.tokenResponse.AccessToken {
-							t.Errorf("Cookie value = %q, expected %q", cookie.Value, tt.tokenResponse.AccessToken)
+						if value, err := encryption.DecryptStringWrapper(cookie.Value, getTestKey); err != nil || value != tt.tokenResponse.AccessToken {
+							t.Errorf("Cookie value = %q, expected %q. err %v", value, tt.tokenResponse.AccessToken, err)
 						}
 						if cookie.MaxAge != 3600 {
 							t.Errorf("Cookie MaxAge = %d, expected 3600", cookie.MaxAge)
@@ -304,7 +310,7 @@ func TestCallbackHandlerWrappedOAuthExchangeNotCalled(t *testing.T) {
 	req := httptest.NewRequest("GET", "/callback", nil) // No code parameter
 	c.Request = req
 
-	CallbackHandlerWrapped(c, mockOAuthExchange, mockClientID, mockClientSecret)
+	CallbackHandlerWrapped(c, mockOAuthExchange, mockClientID, mockClientSecret, getTestKey)
 
 	if exchangeCalled {
 		t.Error("OAuth exchange should not be called when code is missing")
@@ -338,7 +344,7 @@ func TestCallbackHandlerWrappedClientSettingsCalled(t *testing.T) {
 	req := httptest.NewRequest("GET", "/callback?code=test-code", nil)
 	c.Request = req
 
-	CallbackHandlerWrapped(c, mockOAuthExchange, mockClientID, mockClientSecret)
+	CallbackHandlerWrapped(c, mockOAuthExchange, mockClientID, mockClientSecret, getTestKey)
 
 	if !clientIDCalled {
 		t.Error("Client ID setting function was not called")
@@ -372,7 +378,7 @@ func TestCallbackHandlerWrappedMultipleCalls(t *testing.T) {
 		req := httptest.NewRequest("GET", "/callback?code=test-code&state=owner/repo", nil)
 		c.Request = req
 
-		CallbackHandlerWrapped(c, mockOAuthExchange, mockClientID, mockClientSecret)
+		CallbackHandlerWrapped(c, mockOAuthExchange, mockClientID, mockClientSecret, getTestKey)
 
 		if w.Code != http.StatusFound {
 			t.Errorf("Call %d: status code = %d, expected %d", i+1, w.Code, http.StatusFound)
@@ -465,7 +471,7 @@ func TestCallbackHandlerWrappedErrorMessages(t *testing.T) {
 			req := httptest.NewRequest("GET", url, nil)
 			c.Request = req
 
-			CallbackHandlerWrapped(c, mockOAuthExchange, mockClientID, mockClientSecret)
+			CallbackHandlerWrapped(c, mockOAuthExchange, mockClientID, mockClientSecret, getTestKey)
 
 			// Check that response is JSON with error
 			contentType := w.Header().Get("Content-Type")
@@ -504,7 +510,7 @@ func TestCallbackHandlerWrappedCookieProperties(t *testing.T) {
 	req := httptest.NewRequest("GET", "/callback?code=test-code", nil)
 	c.Request = req
 
-	CallbackHandlerWrapped(c, mockOAuthExchange, mockClientID, mockClientSecret)
+	CallbackHandlerWrapped(c, mockOAuthExchange, mockClientID, mockClientSecret, getTestKey)
 
 	// Check cookie properties
 	cookies := w.Result().Cookies()
@@ -525,7 +531,7 @@ func TestCallbackHandlerWrappedCookieProperties(t *testing.T) {
 	}
 
 	// Verify all cookie properties
-	if tokenCookie.Value != "test-token-123" {
+	if value, _ := encryption.DecryptStringWrapper(tokenCookie.Value, getTestKey); value != "test-token-123" {
 		t.Errorf("Cookie value = %q, expected %q", tokenCookie.Value, "test-token-123")
 	}
 

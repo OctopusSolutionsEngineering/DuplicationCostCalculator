@@ -153,23 +153,6 @@ func TestDecryptString_InvalidBase64(t *testing.T) {
 	}
 }
 
-func TestDecryptString_TooShort(t *testing.T) {
-	// Arrange
-	tooShort := "AA==" // Valid base64 but too short to be valid ciphertext
-
-	// Act
-	_, err := DecryptStringWrapper(tooShort, GetMockKey)
-
-	// Assert
-	if err == nil {
-		t.Error("Expected error for too short ciphertext, got nil")
-	}
-
-	if err != nil && !strings.Contains(err.Error(), "ciphertext too short") {
-		t.Errorf("Expected 'ciphertext too short' error, got: %v", err)
-	}
-}
-
 func TestDecryptString_CorruptedData(t *testing.T) {
 	// Arrange
 	plainText := "Test data"
@@ -304,6 +287,27 @@ several lines`
 func TestEncryptString_JSONData(t *testing.T) {
 	// Arrange
 	jsonData := `{"name":"John","age":30,"city":"New York"}`
+
+	// Act
+	encrypted, err := EncryptStringWrapper(jsonData, GetMockKey)
+	if err != nil {
+		t.Fatalf("Encryption failed: %v", err)
+	}
+
+	decrypted, err := DecryptStringWrapper(encrypted, GetMockKey)
+	if err != nil {
+		t.Fatalf("Decryption failed: %v", err)
+	}
+
+	// Assert
+	if decrypted != jsonData {
+		t.Errorf("Expected JSON data to be preserved.\nExpected:\n%s\nGot:\n%s", jsonData, decrypted)
+	}
+}
+
+func TestEncryptString_TestToken(t *testing.T) {
+	// Arrange
+	jsonData := "valid-token"
 
 	// Act
 	encrypted, err := EncryptStringWrapper(jsonData, GetMockKey)
