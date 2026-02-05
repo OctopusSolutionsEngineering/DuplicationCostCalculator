@@ -3,29 +3,31 @@ package workflows
 import (
 	"fmt"
 	"testing"
+
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/models"
 )
 
 func TestCountReposWithDuplicationOrDrift(t *testing.T) {
 	tests := []struct {
 		name        string
-		comparisons map[string]map[string]RepoMeasurements
+		comparisons map[string]map[string]models.RepoMeasurements
 		expected    int
 	}{
 		{
 			name:        "empty comparisons",
-			comparisons: map[string]map[string]RepoMeasurements{},
+			comparisons: map[string]map[string]models.RepoMeasurements{},
 			expected:    0,
 		},
 		{
 			name: "no duplication or drift",
-			comparisons: map[string]map[string]RepoMeasurements{
+			comparisons: map[string]map[string]models.RepoMeasurements{
 				"repo1": {
-					"repo2": RepoMeasurements{
+					"repo2": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 0,
 					},
 				},
 				"repo2": {
-					"repo1": RepoMeasurements{
+					"repo1": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 0,
 					},
 				},
@@ -34,14 +36,14 @@ func TestCountReposWithDuplicationOrDrift(t *testing.T) {
 		},
 		{
 			name: "one repo with duplication",
-			comparisons: map[string]map[string]RepoMeasurements{
+			comparisons: map[string]map[string]models.RepoMeasurements{
 				"repo1": {
-					"repo2": RepoMeasurements{
+					"repo2": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 5,
 					},
 				},
 				"repo2": {
-					"repo1": RepoMeasurements{
+					"repo1": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 5,
 					},
 				},
@@ -50,28 +52,28 @@ func TestCountReposWithDuplicationOrDrift(t *testing.T) {
 		},
 		{
 			name: "multiple repos with duplication",
-			comparisons: map[string]map[string]RepoMeasurements{
+			comparisons: map[string]map[string]models.RepoMeasurements{
 				"repo1": {
-					"repo2": RepoMeasurements{
+					"repo2": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 3,
 					},
-					"repo3": RepoMeasurements{
+					"repo3": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 2,
 					},
 				},
 				"repo2": {
-					"repo1": RepoMeasurements{
+					"repo1": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 3,
 					},
-					"repo3": RepoMeasurements{
+					"repo3": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 1,
 					},
 				},
 				"repo3": {
-					"repo1": RepoMeasurements{
+					"repo1": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 2,
 					},
-					"repo2": RepoMeasurements{
+					"repo2": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 1,
 					},
 				},
@@ -80,28 +82,28 @@ func TestCountReposWithDuplicationOrDrift(t *testing.T) {
 		},
 		{
 			name: "mixed - some with duplication, some without",
-			comparisons: map[string]map[string]RepoMeasurements{
+			comparisons: map[string]map[string]models.RepoMeasurements{
 				"repo1": {
-					"repo2": RepoMeasurements{
+					"repo2": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 5,
 					},
-					"repo3": RepoMeasurements{
+					"repo3": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 0,
 					},
 				},
 				"repo2": {
-					"repo1": RepoMeasurements{
+					"repo1": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 5,
 					},
-					"repo3": RepoMeasurements{
+					"repo3": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 0,
 					},
 				},
 				"repo3": {
-					"repo1": RepoMeasurements{
+					"repo1": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 0,
 					},
-					"repo2": RepoMeasurements{
+					"repo2": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 0,
 					},
 				},
@@ -110,9 +112,9 @@ func TestCountReposWithDuplicationOrDrift(t *testing.T) {
 		},
 		{
 			name: "single comparison with duplication",
-			comparisons: map[string]map[string]RepoMeasurements{
+			comparisons: map[string]map[string]models.RepoMeasurements{
 				"repo1": {
-					"repo2": RepoMeasurements{
+					"repo2": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 10,
 					},
 				},
@@ -121,15 +123,15 @@ func TestCountReposWithDuplicationOrDrift(t *testing.T) {
 		},
 		{
 			name: "repo with multiple comparisons, only one has duplication",
-			comparisons: map[string]map[string]RepoMeasurements{
+			comparisons: map[string]map[string]models.RepoMeasurements{
 				"repo1": {
-					"repo2": RepoMeasurements{
+					"repo2": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 0,
 					},
-					"repo3": RepoMeasurements{
+					"repo3": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 0,
 					},
-					"repo4": RepoMeasurements{
+					"repo4": models.RepoMeasurements{
 						StepsThatIndicateDuplicationRisk: 1,
 					},
 				},
@@ -138,36 +140,36 @@ func TestCountReposWithDuplicationOrDrift(t *testing.T) {
 		},
 		{
 			name: "large number of repos with varying duplication",
-			comparisons: map[string]map[string]RepoMeasurements{
+			comparisons: map[string]map[string]models.RepoMeasurements{
 				"repo1": {
-					"repo2": RepoMeasurements{StepsThatIndicateDuplicationRisk: 10},
-					"repo3": RepoMeasurements{StepsThatIndicateDuplicationRisk: 5},
-					"repo4": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
-					"repo5": RepoMeasurements{StepsThatIndicateDuplicationRisk: 8},
+					"repo2": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 10},
+					"repo3": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 5},
+					"repo4": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo5": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 8},
 				},
 				"repo2": {
-					"repo1": RepoMeasurements{StepsThatIndicateDuplicationRisk: 10},
-					"repo3": RepoMeasurements{StepsThatIndicateDuplicationRisk: 3},
-					"repo4": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
-					"repo5": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo1": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 10},
+					"repo3": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 3},
+					"repo4": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo5": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
 				},
 				"repo3": {
-					"repo1": RepoMeasurements{StepsThatIndicateDuplicationRisk: 5},
-					"repo2": RepoMeasurements{StepsThatIndicateDuplicationRisk: 3},
-					"repo4": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
-					"repo5": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo1": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 5},
+					"repo2": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 3},
+					"repo4": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo5": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
 				},
 				"repo4": {
-					"repo1": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
-					"repo2": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
-					"repo3": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
-					"repo5": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo1": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo2": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo3": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo5": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
 				},
 				"repo5": {
-					"repo1": RepoMeasurements{StepsThatIndicateDuplicationRisk: 8},
-					"repo2": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
-					"repo3": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
-					"repo4": RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo1": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 8},
+					"repo2": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo3": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
+					"repo4": models.RepoMeasurements{StepsThatIndicateDuplicationRisk: 0},
 				},
 			},
 			expected: 4, // repo1, repo2, repo3, repo5 all have at least one comparison with duplication
@@ -187,17 +189,17 @@ func TestCountReposWithDuplicationOrDrift(t *testing.T) {
 func TestHasVersionDrift(t *testing.T) {
 	tests := []struct {
 		name     string
-		action1  Action
-		action2  Action
+		action1  models.Action
+		action2  models.Action
 		expected bool
 	}{
 		{
 			name: "same action with different versions",
-			action1: Action{
+			action1: models.Action{
 				Uses:        "actions/checkout",
 				UsesVersion: "v3",
 			},
-			action2: Action{
+			action2: models.Action{
 				Uses:        "actions/checkout",
 				UsesVersion: "v4",
 			},
@@ -205,11 +207,11 @@ func TestHasVersionDrift(t *testing.T) {
 		},
 		{
 			name: "same action with same versions",
-			action1: Action{
+			action1: models.Action{
 				Uses:        "actions/checkout",
 				UsesVersion: "v3",
 			},
-			action2: Action{
+			action2: models.Action{
 				Uses:        "actions/checkout",
 				UsesVersion: "v3",
 			},
@@ -217,11 +219,11 @@ func TestHasVersionDrift(t *testing.T) {
 		},
 		{
 			name: "different actions with different versions",
-			action1: Action{
+			action1: models.Action{
 				Uses:        "actions/checkout",
 				UsesVersion: "v3",
 			},
-			action2: Action{
+			action2: models.Action{
 				Uses:        "actions/setup-node",
 				UsesVersion: "v4",
 			},
@@ -229,11 +231,11 @@ func TestHasVersionDrift(t *testing.T) {
 		},
 		{
 			name: "action1 with empty Uses",
-			action1: Action{
+			action1: models.Action{
 				Uses:        "",
 				UsesVersion: "v3",
 			},
-			action2: Action{
+			action2: models.Action{
 				Uses:        "actions/checkout",
 				UsesVersion: "v4",
 			},
@@ -241,11 +243,11 @@ func TestHasVersionDrift(t *testing.T) {
 		},
 		{
 			name: "action1 with empty UsesVersion",
-			action1: Action{
+			action1: models.Action{
 				Uses:        "actions/checkout",
 				UsesVersion: "",
 			},
-			action2: Action{
+			action2: models.Action{
 				Uses:        "actions/checkout",
 				UsesVersion: "v4",
 			},
@@ -253,11 +255,11 @@ func TestHasVersionDrift(t *testing.T) {
 		},
 		{
 			name: "action2 with empty UsesVersion",
-			action1: Action{
+			action1: models.Action{
 				Uses:        "actions/checkout",
 				UsesVersion: "v3",
 			},
-			action2: Action{
+			action2: models.Action{
 				Uses:        "actions/checkout",
 				UsesVersion: "",
 			},
@@ -265,11 +267,11 @@ func TestHasVersionDrift(t *testing.T) {
 		},
 		{
 			name: "both actions with empty Uses",
-			action1: Action{
+			action1: models.Action{
 				Uses:        "",
 				UsesVersion: "v3",
 			},
-			action2: Action{
+			action2: models.Action{
 				Uses:        "",
 				UsesVersion: "v4",
 			},
@@ -277,11 +279,11 @@ func TestHasVersionDrift(t *testing.T) {
 		},
 		{
 			name: "both actions with empty UsesVersion",
-			action1: Action{
+			action1: models.Action{
 				Uses:        "actions/checkout",
 				UsesVersion: "",
 			},
-			action2: Action{
+			action2: models.Action{
 				Uses:        "actions/checkout",
 				UsesVersion: "",
 			},
@@ -289,11 +291,11 @@ func TestHasVersionDrift(t *testing.T) {
 		},
 		{
 			name: "complex action names with different versions",
-			action1: Action{
+			action1: models.Action{
 				Uses:        "docker/build-push-action",
 				UsesVersion: "v5.0.0",
 			},
-			action2: Action{
+			action2: models.Action{
 				Uses:        "docker/build-push-action",
 				UsesVersion: "v5.1.0",
 			},
@@ -301,11 +303,11 @@ func TestHasVersionDrift(t *testing.T) {
 		},
 		{
 			name: "action with version tags (SHA vs semver)",
-			action1: Action{
+			action1: models.Action{
 				Uses:        "actions/checkout",
 				UsesVersion: "v3",
 			},
-			action2: Action{
+			action2: models.Action{
 				Uses:        "actions/checkout",
 				UsesVersion: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
 			},
@@ -313,11 +315,11 @@ func TestHasVersionDrift(t *testing.T) {
 		},
 		{
 			name: "built-in steps (empty Uses) with different versions",
-			action1: Action{
+			action1: models.Action{
 				Uses:        "",
 				UsesVersion: "latest",
 			},
-			action2: Action{
+			action2: models.Action{
 				Uses:        "",
 				UsesVersion: "v1",
 			},
@@ -325,11 +327,11 @@ func TestHasVersionDrift(t *testing.T) {
 		},
 		{
 			name: "action2 with empty Uses",
-			action1: Action{
+			action1: models.Action{
 				Uses:        "actions/checkout",
 				UsesVersion: "v3",
 			},
-			action2: Action{
+			action2: models.Action{
 				Uses:        "",
 				UsesVersion: "v4",
 			},
@@ -337,11 +339,11 @@ func TestHasVersionDrift(t *testing.T) {
 		},
 		{
 			name: "version with different formats but same action",
-			action1: Action{
+			action1: models.Action{
 				Uses:        "hashicorp/setup-terraform",
 				UsesVersion: "v2",
 			},
-			action2: Action{
+			action2: models.Action{
 				Uses:        "hashicorp/setup-terraform",
 				UsesVersion: "2.0.3",
 			},
@@ -349,11 +351,11 @@ func TestHasVersionDrift(t *testing.T) {
 		},
 		{
 			name: "latest vs specific version",
-			action1: Action{
+			action1: models.Action{
 				Uses:        "actions/cache",
 				UsesVersion: "latest",
 			},
-			action2: Action{
+			action2: models.Action{
 				Uses:        "actions/cache",
 				UsesVersion: "v3",
 			},
@@ -368,6 +370,358 @@ func TestHasVersionDrift(t *testing.T) {
 				t.Errorf("HasVersionDrift(%+v, %+v) = %v, expected %v", tt.action1, tt.action2, result, tt.expected)
 			}
 		})
+	}
+}
+
+func TestConvertWorkflowToActionsMap(t *testing.T) {
+	tests := []struct {
+		name                 string
+		workflows            map[string][]string
+		expectedRepoCount    int
+		expectedWorkflowsFor map[string]int // repo -> number of workflows
+	}{
+		{
+			name:              "empty workflows map",
+			workflows:         map[string][]string{},
+			expectedRepoCount: 0,
+		},
+		{
+			name: "single repo with single workflow",
+			workflows: map[string][]string{
+				"owner/repo1": {
+					`
+name: Test Workflow
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+`,
+				},
+			},
+			expectedRepoCount: 1,
+			expectedWorkflowsFor: map[string]int{
+				"owner/repo1": 1,
+			},
+		},
+		{
+			name: "single repo with multiple workflows",
+			workflows: map[string][]string{
+				"owner/repo1": {
+					`
+name: Workflow 1
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+`,
+					`
+name: Workflow 2
+on: [pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v3
+`,
+				},
+			},
+			expectedRepoCount: 1,
+			expectedWorkflowsFor: map[string]int{
+				"owner/repo1": 2,
+			},
+		},
+		{
+			name: "multiple repos with single workflow each",
+			workflows: map[string][]string{
+				"owner/repo1": {
+					`
+name: Test Workflow
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+`,
+				},
+				"owner/repo2": {
+					`
+name: Build Workflow
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v4
+`,
+				},
+			},
+			expectedRepoCount: 2,
+			expectedWorkflowsFor: map[string]int{
+				"owner/repo1": 1,
+				"owner/repo2": 1,
+			},
+		},
+		{
+			name: "multiple repos with multiple workflows",
+			workflows: map[string][]string{
+				"owner/repo1": {
+					`
+name: Workflow 1
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+`,
+					`
+name: Workflow 2
+on: [pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v3
+`,
+				},
+				"owner/repo2": {
+					`
+name: CI
+on: [push]
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+`,
+				},
+			},
+			expectedRepoCount: 2,
+			expectedWorkflowsFor: map[string]int{
+				"owner/repo1": 2,
+				"owner/repo2": 1,
+			},
+		},
+		{
+			name: "workflow with no steps",
+			workflows: map[string][]string{
+				"owner/repo1": {
+					`
+name: Empty Workflow
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+`,
+				},
+			},
+			expectedRepoCount: 1,
+			expectedWorkflowsFor: map[string]int{
+				"owner/repo1": 1,
+			},
+		},
+		{
+			name: "invalid workflow YAML",
+			workflows: map[string][]string{
+				"owner/repo1": {
+					`this is not valid yaml: [[[`,
+				},
+			},
+			expectedRepoCount: 1,
+			expectedWorkflowsFor: map[string]int{
+				"owner/repo1": 1,
+			},
+		},
+		{
+			name: "workflow with multiple jobs and steps",
+			workflows: map[string][]string{
+				"owner/repo1": {
+					`
+name: Complex Workflow
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/build-push-action@v5
+`,
+				},
+			},
+			expectedRepoCount: 1,
+			expectedWorkflowsFor: map[string]int{
+				"owner/repo1": 1,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertWorkflowToActionsMap(tt.workflows)
+
+			// Check number of repos
+			if len(result) != tt.expectedRepoCount {
+				t.Errorf("ConvertWorkflowToActionsMap() returned %d repos, expected %d", len(result), tt.expectedRepoCount)
+			}
+
+			// Check number of workflows per repo
+			for repo, expectedCount := range tt.expectedWorkflowsFor {
+				if actions, ok := result[repo]; !ok {
+					t.Errorf("ConvertWorkflowToActionsMap() missing repo %q", repo)
+				} else if len(actions) != expectedCount {
+					t.Errorf("ConvertWorkflowToActionsMap()[%q] has %d workflows, expected %d", repo, len(actions), expectedCount)
+				}
+			}
+		})
+	}
+}
+
+func TestConvertWorkflowToActionsMapWorkflowIdUniqueness(t *testing.T) {
+	// Test that workflow IDs are unique across all workflows
+	workflows := map[string][]string{
+		"owner/repo1": {
+			`
+name: Workflow 1
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+`,
+			`
+name: Workflow 2
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v3
+`,
+		},
+		"owner/repo2": {
+			`
+name: Workflow 3
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v4
+`,
+		},
+	}
+
+	result := ConvertWorkflowToActionsMap(workflows)
+
+	// Collect all action IDs
+	seenIds := make(map[string]bool)
+	for _, repoWorkflows := range result {
+		for _, workflow := range repoWorkflows {
+			for _, action := range workflow {
+				if seenIds[action.Id] {
+					t.Errorf("ConvertWorkflowToActionsMap() generated duplicate action ID: %q", action.Id)
+				}
+				seenIds[action.Id] = true
+			}
+		}
+	}
+}
+
+func TestConvertWorkflowToActionsMapPreservesOrder(t *testing.T) {
+	// Test that workflows are processed in order (though map iteration is random,
+	// the function should handle all workflows)
+	workflows := map[string][]string{
+		"owner/repo1": {
+			`
+name: First Workflow
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+`,
+			`
+name: Second Workflow
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v3
+`,
+			`
+name: Third Workflow
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v4
+`,
+		},
+	}
+
+	result := ConvertWorkflowToActionsMap(workflows)
+
+	// Verify all three workflows were processed
+	if len(result["owner/repo1"]) != 3 {
+		t.Errorf("ConvertWorkflowToActionsMap() processed %d workflows, expected 3", len(result["owner/repo1"]))
+	}
+}
+
+func TestConvertWorkflowToActionsMapEmptyWorkflowStrings(t *testing.T) {
+	// Test handling of empty workflow strings
+	workflows := map[string][]string{
+		"owner/repo1": {
+			"",
+			`
+name: Valid Workflow
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+`,
+			"",
+		},
+	}
+
+	result := ConvertWorkflowToActionsMap(workflows)
+
+	// Should process all three "workflows" even if some are empty/invalid
+	if len(result["owner/repo1"]) != 3 {
+		t.Errorf("ConvertWorkflowToActionsMap() processed %d workflows, expected 3", len(result["owner/repo1"]))
+	}
+}
+
+func TestConvertWorkflowToActionsMapNilWorkflows(t *testing.T) {
+	// Test with nil workflows map
+	var workflows map[string][]string = nil
+
+	result := ConvertWorkflowToActionsMap(workflows)
+
+	if result == nil {
+		t.Error("ConvertWorkflowToActionsMap() returned nil, expected empty map")
+	}
+
+	if len(result) != 0 {
+		t.Errorf("ConvertWorkflowToActionsMap() returned %d repos, expected 0", len(result))
 	}
 }
 
@@ -508,14 +862,14 @@ jobs:
 }
 
 func TestFindActionsWithDifferentVersions(t *testing.T) {
-	actions1 := []Action{
+	actions1 := []models.Action{
 		{Id: "1-1", Uses: "actions/checkout", UsesVersion: "v3"},
 		{Id: "1-2", Uses: "actions/setup-node", UsesVersion: "v3"},
 		{Id: "1-3", Uses: "actions/setup-go", UsesVersion: "v4"},
 		{Id: "1-4", Uses: "actions/cache", UsesVersion: "v3"},
 	}
 
-	actions2 := []Action{
+	actions2 := []models.Action{
 		{Id: "2-1", Uses: "actions/checkout", UsesVersion: "v4"},
 		{Id: "2-2", Uses: "actions/setup-node", UsesVersion: "v3"},
 		{Id: "2-3", Uses: "actions/setup-go", UsesVersion: "v5"},
@@ -535,12 +889,12 @@ func TestFindActionsWithDifferentVersions(t *testing.T) {
 }
 
 func TestFindActionsWithDifferentVersionsNoMatches(t *testing.T) {
-	actions1 := []Action{
+	actions1 := []models.Action{
 		{Id: "1-1", Uses: "actions/checkout", UsesVersion: "v3"},
 		{Id: "1-2", Uses: "actions/setup-node", UsesVersion: "v3"},
 	}
 
-	actions2 := []Action{
+	actions2 := []models.Action{
 		{Id: "2-1", Uses: "actions/setup-go", UsesVersion: "v4"},
 		{Id: "2-2", Uses: "actions/cache", UsesVersion: "v3"},
 	}
@@ -553,12 +907,12 @@ func TestFindActionsWithDifferentVersionsNoMatches(t *testing.T) {
 }
 
 func TestFindActionsWithDifferentVersionsSameVersions(t *testing.T) {
-	actions1 := []Action{
+	actions1 := []models.Action{
 		{Id: "1-1", Uses: "actions/checkout", UsesVersion: "v4"},
 		{Id: "1-2", Uses: "actions/setup-node", UsesVersion: "v3"},
 	}
 
-	actions2 := []Action{
+	actions2 := []models.Action{
 		{Id: "2-1", Uses: "actions/checkout", UsesVersion: "v4"},
 		{Id: "2-2", Uses: "actions/setup-node", UsesVersion: "v3"},
 	}
@@ -571,8 +925,8 @@ func TestFindActionsWithDifferentVersionsSameVersions(t *testing.T) {
 }
 
 func TestFindActionsWithDifferentVersionsEmptyLists(t *testing.T) {
-	actions1 := []Action{}
-	actions2 := []Action{
+	actions1 := []models.Action{}
+	actions2 := []models.Action{
 		{Id: "2-1", Uses: "actions/checkout", UsesVersion: "v4"},
 	}
 
@@ -584,12 +938,12 @@ func TestFindActionsWithDifferentVersionsEmptyLists(t *testing.T) {
 }
 
 func TestFindActionsWithDifferentVersionsMultipleSameAction(t *testing.T) {
-	actions1 := []Action{
+	actions1 := []models.Action{
 		{Id: "1-1", Uses: "actions/checkout", UsesVersion: "v3"},
 		{Id: "1-2", Uses: "actions/checkout", UsesVersion: "v3"},
 	}
 
-	actions2 := []Action{
+	actions2 := []models.Action{
 		{Id: "2-1", Uses: "actions/checkout", UsesVersion: "v4"},
 		{Id: "2-2", Uses: "actions/checkout", UsesVersion: "v4"},
 	}
@@ -604,7 +958,7 @@ func TestFindActionsWithDifferentVersionsMultipleSameAction(t *testing.T) {
 }
 
 func TestFindActionsWithSimilarConfigurations(t *testing.T) {
-	actions1 := []Action{
+	actions1 := []models.Action{
 		{
 			Id:          "1-1",
 			Uses:        "actions/checkout",
@@ -628,7 +982,7 @@ func TestFindActionsWithSimilarConfigurations(t *testing.T) {
 		},
 	}
 
-	actions2 := []Action{
+	actions2 := []models.Action{
 		{
 			Id:          "2-1",
 			Uses:        "actions/checkout",
@@ -669,7 +1023,7 @@ func TestFindActionsWithSimilarConfigurations(t *testing.T) {
 }
 
 func TestFindActionsWithSimilarConfigurationsNoMatches(t *testing.T) {
-	actions1 := []Action{
+	actions1 := []models.Action{
 		{
 			Id:          "1-1",
 			Uses:        "actions/checkout",
@@ -677,7 +1031,7 @@ func TestFindActionsWithSimilarConfigurationsNoMatches(t *testing.T) {
 		},
 	}
 
-	actions2 := []Action{
+	actions2 := []models.Action{
 		{
 			Id:          "2-1",
 			Uses:        "actions/setup-node",
@@ -701,8 +1055,8 @@ func TestFindActionsWithSimilarConfigurationsNoMatches(t *testing.T) {
 }
 
 func TestFindActionsWithSimilarConfigurationsEmptyLists(t *testing.T) {
-	actions1 := []Action{}
-	actions2 := []Action{
+	actions1 := []models.Action{}
+	actions2 := []models.Action{
 		{Id: "2-1", Uses: "actions/checkout", UsesVersion: "v4"},
 	}
 
@@ -714,7 +1068,7 @@ func TestFindActionsWithSimilarConfigurationsEmptyLists(t *testing.T) {
 }
 
 func TestFindActionsWithSimilarConfigurationsDifferentConfigs(t *testing.T) {
-	actions1 := []Action{
+	actions1 := []models.Action{
 		{
 			Id:          "1-1",
 			Uses:        "actions/setup-node",
@@ -732,7 +1086,7 @@ func TestFindActionsWithSimilarConfigurationsDifferentConfigs(t *testing.T) {
 		},
 	}
 
-	actions2 := []Action{
+	actions2 := []models.Action{
 		{
 			Id:          "2-1",
 			Uses:        "actions/setup-node",
@@ -760,7 +1114,7 @@ func TestFindActionsWithSimilarConfigurationsDifferentConfigs(t *testing.T) {
 }
 
 func TestFindActionsWithSimilarConfigurationsNoHashes(t *testing.T) {
-	actions1 := []Action{
+	actions1 := []models.Action{
 		{
 			Id:          "1-1",
 			Uses:        "actions/checkout",
@@ -771,7 +1125,7 @@ func TestFindActionsWithSimilarConfigurationsNoHashes(t *testing.T) {
 		},
 	}
 
-	actions2 := []Action{
+	actions2 := []models.Action{
 		{
 			Id:          "2-1",
 			Uses:        "actions/checkout",
@@ -792,7 +1146,7 @@ func TestFindActionsWithSimilarConfigurationsNoHashes(t *testing.T) {
 }
 
 func TestFindActionsWithSimilarConfigurationsMultiplePairs(t *testing.T) {
-	actions1 := []Action{
+	actions1 := []models.Action{
 		{
 			Id:          "1-1",
 			Uses:        "actions/checkout",
@@ -811,7 +1165,7 @@ func TestFindActionsWithSimilarConfigurationsMultiplePairs(t *testing.T) {
 		},
 	}
 
-	actions2 := []Action{
+	actions2 := []models.Action{
 		{
 			Id:          "2-1",
 			Uses:        "actions/checkout",
@@ -1246,5 +1600,275 @@ jobs:
 
 	if report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount != 2 || len(report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig) != 1 {
 		t.Error("Expected one similar steps, found " + fmt.Sprintf("%v %v", report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount, report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig))
+	}
+}
+func TestGetActionAuthorsFromActionsList(t *testing.T) {
+	tests := []struct {
+		name        string
+		actionsList [][]models.Action
+		expected    []string
+	}{
+		{
+			name:        "nil actionsList",
+			actionsList: nil,
+			expected:    []string{},
+		},
+		{
+			name:        "empty actionsList",
+			actionsList: [][]models.Action{},
+			expected:    []string{},
+		},
+		{
+			name: "single action from actions org",
+			actionsList: [][]models.Action{
+				{
+					{Uses: "actions/checkout@v4"},
+				},
+			},
+			expected: []string{"actions"},
+		},
+		{
+			name: "multiple actions from same org",
+			actionsList: [][]models.Action{
+				{
+					{Uses: "actions/checkout@v4"},
+					{Uses: "actions/setup-node@v3"},
+					{Uses: "actions/cache@v3"},
+				},
+			},
+			expected: []string{"actions"},
+		},
+		{
+			name: "actions from different orgs",
+			actionsList: [][]models.Action{
+				{
+					{Uses: "actions/checkout@v4"},
+					{Uses: "docker/build-push-action@v5"},
+					{Uses: "hashicorp/setup-terraform@v2"},
+				},
+			},
+			expected: []string{"actions", "docker", "hashicorp"},
+		},
+		{
+			name: "built-in steps (empty Uses)",
+			actionsList: [][]models.Action{
+				{
+					{Uses: ""},
+					{Uses: "actions/checkout@v4"},
+				},
+			},
+			expected: []string{BuiltInStep, "actions"},
+		},
+		{
+			name: "multiple built-in steps",
+			actionsList: [][]models.Action{
+				{
+					{Uses: ""},
+					{Uses: ""},
+					{Uses: "actions/checkout@v4"},
+				},
+			},
+			expected: []string{BuiltInStep, "actions"},
+		},
+		{
+			name: "multiple workflows with same authors",
+			actionsList: [][]models.Action{
+				{
+					{Uses: "actions/checkout@v4"},
+					{Uses: "docker/build-push-action@v5"},
+				},
+				{
+					{Uses: "actions/setup-node@v3"},
+					{Uses: "docker/login-action@v2"},
+				},
+			},
+			expected: []string{"actions", "docker"},
+		},
+		{
+			name: "multiple workflows with different authors",
+			actionsList: [][]models.Action{
+				{
+					{Uses: "actions/checkout@v4"},
+				},
+				{
+					{Uses: "docker/build-push-action@v5"},
+				},
+				{
+					{Uses: "hashicorp/setup-terraform@v2"},
+				},
+			},
+			expected: []string{"actions", "docker", "hashicorp"},
+		},
+		{
+			name: "actions with three-part names",
+			actionsList: [][]models.Action{
+				{
+					{Uses: "octocat/hello-world-docker-action@v1"},
+					{Uses: "github/codeql-action/init@v2"},
+				},
+			},
+			expected: []string{"octocat", "github"},
+		},
+		{
+			name: "duplicate authors across workflows",
+			actionsList: [][]models.Action{
+				{
+					{Uses: "actions/checkout@v4"},
+					{Uses: "actions/setup-node@v3"},
+				},
+				{
+					{Uses: "actions/cache@v3"},
+					{Uses: "actions/upload-artifact@v3"},
+				},
+			},
+			expected: []string{"actions"},
+		},
+		{
+			name: "local actions (relative paths)",
+			actionsList: [][]models.Action{
+				{
+					{Uses: "./.github/actions/my-action"},
+					{Uses: "./local-action"},
+					{Uses: "actions/checkout@v4"},
+				},
+			},
+			expected: []string{".", "actions"},
+		},
+		{
+			name: "actions with no slashes",
+			actionsList: [][]models.Action{
+				{
+					{Uses: "standalone-action"},
+					{Uses: "actions/checkout@v4"},
+				},
+			},
+			expected: []string{"standalone-action", "actions"},
+		},
+		{
+			name: "mixed built-in and regular actions",
+			actionsList: [][]models.Action{
+				{
+					{Uses: ""},
+					{Uses: "actions/checkout@v4"},
+					{Uses: ""},
+					{Uses: "docker/build-push-action@v5"},
+				},
+			},
+			expected: []string{BuiltInStep, "actions", "docker"},
+		},
+		{
+			name: "empty workflows in list",
+			actionsList: [][]models.Action{
+				{},
+				{
+					{Uses: "actions/checkout@v4"},
+				},
+				{},
+			},
+			expected: []string{"actions"},
+		},
+		{
+			name: "complex scenario with all types",
+			actionsList: [][]models.Action{
+				{
+					{Uses: ""},
+					{Uses: "actions/checkout@v4"},
+					{Uses: "docker/build-push-action@v5"},
+				},
+				{
+					{Uses: "hashicorp/setup-terraform@v2"},
+					{Uses: "actions/setup-go@v4"},
+				},
+				{
+					{Uses: "./.github/actions/custom"},
+					{Uses: ""},
+				},
+			},
+			expected: []string{BuiltInStep, "actions", "docker", "hashicorp", "."},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := GetActionAuthorsFromActionsList(tt.actionsList)
+			// Check length
+			if len(result) != len(tt.expected) {
+				t.Errorf("GetActionAuthorsFromActionsList() returned %d authors, expected %d", len(result), len(tt.expected))
+				t.Logf("Result: %v", result)
+				t.Logf("Expected: %v", tt.expected)
+				return
+			}
+			// Check that all expected authors are present (order doesn't matter for uniqueness)
+			for _, expectedAuthor := range tt.expected {
+				found := false
+				for _, resultAuthor := range result {
+					if resultAuthor == expectedAuthor {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("GetActionAuthorsFromActionsList() missing expected author %q", expectedAuthor)
+					t.Logf("Result: %v", result)
+					t.Logf("Expected: %v", tt.expected)
+				}
+			}
+			// Check that no unexpected authors are present
+			for _, resultAuthor := range result {
+				found := false
+				for _, expectedAuthor := range tt.expected {
+					if resultAuthor == expectedAuthor {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("GetActionAuthorsFromActionsList() has unexpected author %q", resultAuthor)
+					t.Logf("Result: %v", result)
+					t.Logf("Expected: %v", tt.expected)
+				}
+			}
+		})
+	}
+}
+func TestGetActionAuthorsFromActionsListUniqueness(t *testing.T) {
+	// Test that the function returns unique authors only
+	actionsList := [][]models.Action{
+		{
+			{Uses: "actions/checkout@v4"},
+			{Uses: "actions/setup-node@v3"},
+			{Uses: "actions/cache@v3"},
+		},
+		{
+			{Uses: "actions/checkout@v3"}, // Same author, different version
+			{Uses: "actions/upload-artifact@v3"},
+		},
+	}
+	result := GetActionAuthorsFromActionsList(actionsList)
+	// Should only have "actions" once
+	if len(result) != 1 {
+		t.Errorf("GetActionAuthorsFromActionsList() returned %d authors, expected 1", len(result))
+		t.Logf("Result: %v", result)
+	}
+	if result[0] != "actions" {
+		t.Errorf("GetActionAuthorsFromActionsList() returned %q, expected 'actions'", result[0])
+	}
+}
+func TestGetActionAuthorsFromActionsListEmptyStrings(t *testing.T) {
+	// Test handling of empty Uses strings
+	actionsList := [][]models.Action{
+		{
+			{Uses: ""},
+			{Uses: ""},
+			{Uses: ""},
+		},
+	}
+	result := GetActionAuthorsFromActionsList(actionsList)
+	// Should only have BuiltInStep once
+	if len(result) != 1 {
+		t.Errorf("GetActionAuthorsFromActionsList() returned %d authors, expected 1", len(result))
+		t.Logf("Result: %v", result)
+	}
+	if result[0] != BuiltInStep {
+		t.Errorf("GetActionAuthorsFromActionsList() returned %q, expected %q", result[0], BuiltInStep)
 	}
 }

@@ -4,8 +4,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/client"
-	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/workflows"
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/workflows"
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/infrastructure/client"
 )
 
 func main() {

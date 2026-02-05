@@ -1,4 +1,4 @@
-package workflows
+package models
 
 type Report struct {
 	NumberOfRepos                       int                                    `json:"numberOfRepos"`

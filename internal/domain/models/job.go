@@ -1,7 +1,7 @@
-package workflows
+package models
 
 import (
-	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/collections"
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/collections"
 	"github.com/glaslos/tlsh"
 )
 
@@ -18,7 +18,7 @@ type Action struct {
 	// With is a map of input parameters provided to the action.
 	With map[string]string `json:"with"`
 	// A locality sensitive hash of the action configuration.
-	hash *tlsh.TLSH
+	Hash *tlsh.TLSH
 }
 
 func (action *Action) GenerateHash() {
@@ -54,6 +54,6 @@ func (action *Action) GenerateHash() {
 
 	if foundConfig {
 		action1Hash.Sum(nil)
-		action.hash = action1Hash
+		action.Hash = action1Hash
 	}
 }

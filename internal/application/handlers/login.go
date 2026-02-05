@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/client"
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/infrastructure/client"
 	"github.com/gin-gonic/gin"
 )
 

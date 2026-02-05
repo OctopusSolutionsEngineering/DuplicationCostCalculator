@@ -1,13 +1,15 @@
 package workflows
 
 import (
-	"context"
 	"fmt"
 	"maps"
 	"slices"
 	"strings"
 
-	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/collections"
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/collections"
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/models"
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/parsing"
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/infrastructure/githubapi"
 	"github.com/google/go-github/v57/github"
 	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
@@ -23,7 +25,7 @@ type RepoActions struct {
 	WorkflowAdvisories []string
 }
 
-func GenerateReport(client *github.Client, repos []string) Report {
+func GenerateReport(client *github.Client, repos []string) models.Report {
 	result := make(chan RepoActions)
 	workflowsContent := map[string][]string{}
 	workflowsContributors := map[string][]string{}
@@ -34,15 +36,15 @@ func GenerateReport(client *github.Client, repos []string) Report {
 		go func(client *github.Client, repo string) {
 			workflows := []string{}
 			contributors := []string{}
-			advisories := GetWorkflowAdvisories(client, repo)
-			workflowFiles := FindWorkflows(client, repo)
+			advisories := githubapi.GetWorkflowAdvisories(client, repo)
+			workflowFiles := githubapi.FindWorkflows(client, repo)
 
 			for _, workflowFile := range workflowFiles {
-				workflowStr := WorkflowToString(client, repo, workflowFile)
+				workflowStr := githubapi.WorkflowToString(client, repo, workflowFile)
 				if workflowStr != "" {
 					workflows = append(workflows, workflowStr)
 				}
-				contributors = FindContributorsToWorkflow(client, repo, workflowFile)
+				contributors = githubapi.FindContributorsToWorkflow(client, repo, workflowFile)
 			}
 
 			result <- RepoActions{
@@ -67,15 +69,15 @@ func GenerateReport(client *github.Client, repos []string) Report {
 	return report
 }
 
-func GenerateReportFromWorkflows(workflows map[string][]string, contributors map[string][]string, repoAdvisories map[string][]string) Report {
+func GenerateReportFromWorkflows(workflows map[string][]string, contributors map[string][]string, repoAdvisories map[string][]string) models.Report {
 
-	repoActions := convertWorkflowToActionsMap(workflows)
+	repoActions := ConvertWorkflowToActionsMap(workflows)
 
 	repoNames := maps.Keys(repoActions)
 	sortedRepoNames := slices.Sorted(repoNames)
 
-	report := Report{
-		Comparisons:        map[string]map[string]RepoMeasurements{},
+	report := models.Report{
+		Comparisons:        map[string]map[string]models.RepoMeasurements{},
 		Contributors:       map[string][]string{},
 		WorkflowAdvisories: map[string][]string{},
 		ActionAuthors:      map[string][]string{},
@@ -115,11 +117,11 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 
 					// Generate a list of all the action IDs for steps with different versions and similar config
 					// This provides a complete list of steps that would have to be updated to ensure consistency between the workflows
-					similarConfigIds = lo.Uniq(append(similarConfigIds, lo.Map(similarConfigsActions, func(item Action, index int) string {
+					similarConfigIds = lo.Uniq(append(similarConfigIds, lo.Map(similarConfigsActions, func(item models.Action, index int) string {
 						return item.Id
 					})...))
 
-					diffVersionsIds = lo.Uniq(append(diffVersionsIds, lo.Map(diffVersionsActions, func(item Action, index int) string {
+					diffVersionsIds = lo.Uniq(append(diffVersionsIds, lo.Map(diffVersionsActions, func(item models.Action, index int) string {
 						return item.Id
 					})...))
 
@@ -130,14 +132,14 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 			}
 
 			if _, ok := report.Comparisons[repo1]; !ok {
-				report.Comparisons[repo1] = make(map[string]RepoMeasurements)
+				report.Comparisons[repo1] = make(map[string]models.RepoMeasurements)
 			}
 
 			if _, ok := report.Comparisons[repo2]; !ok {
-				report.Comparisons[repo2] = make(map[string]RepoMeasurements)
+				report.Comparisons[repo2] = make(map[string]models.RepoMeasurements)
 			}
 
-			report.Comparisons[repo1][repo2] = RepoMeasurements{
+			report.Comparisons[repo1][repo2] = models.RepoMeasurements{
 				StepsWithDifferentVersions:       stepsWithDifferentVersions,
 				StepsWithDifferentVersionsCount:  len(diffVersionsIds),
 				StepsWithSimilarConfig:           stepsWithSimilarConfig,
@@ -164,13 +166,13 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 
 // CountReposWithDuplicationOrDrift counts the number of repositories that have duplication or drift.
 // A repo has duplication or drift if any of its comparisons indicate steps that would need to be updated.
-func CountReposWithDuplicationOrDrift(comparisons map[string]map[string]RepoMeasurements) int {
+func CountReposWithDuplicationOrDrift(comparisons map[string]map[string]models.RepoMeasurements) int {
 	allComparisons := lo.Values(comparisons)
-	reposWithDuplicationOrDrift := lo.Filter(allComparisons, func(repoComparisons map[string]RepoMeasurements, index int) bool {
+	reposWithDuplicationOrDrift := lo.Filter(allComparisons, func(repoComparisons map[string]models.RepoMeasurements, index int) bool {
 		// Get all measurements for this repo's comparisons
 		measurements := lo.Values(repoComparisons)
 		// Check if any measurement has steps that indicate duplication risk
-		measurementsWithRisk := lo.Filter(measurements, func(measurement RepoMeasurements, index int) bool {
+		measurementsWithRisk := lo.Filter(measurements, func(measurement models.RepoMeasurements, index int) bool {
 			return measurement.StepsThatIndicateDuplicationRisk > 0
 		})
 		// If there's at least one comparison with risk, this repo has duplication or drift
@@ -179,8 +181,8 @@ func CountReposWithDuplicationOrDrift(comparisons map[string]map[string]RepoMeas
 	return len(reposWithDuplicationOrDrift)
 }
 
-func convertWorkflowToActionsMap(workflows map[string][]string) map[string][][]Action {
-	repoActions := make(map[string][][]Action)
+func ConvertWorkflowToActionsMap(workflows map[string][]string) map[string][][]models.Action {
+	repoActions := make(map[string][][]models.Action)
 
 	workflowId := 0
 	for repo, workflowFiles := range workflows {
@@ -194,129 +196,25 @@ func convertWorkflowToActionsMap(workflows map[string][]string) map[string][][]A
 	return repoActions
 }
 
-// FindWorkflows loads all the GitHub Actions workflows for a given repository.
-// jwt is the JSON Web Token used for authentication.
-// repo is the repository in the format "owner/repo".
-func FindWorkflows(client *github.Client, repo string) []string {
-	ctx := context.Background()
-
-	owner, repoName, err := splitRepo(repo)
-	if err != nil {
-		return []string{}
-	}
-
-	// List contents of .github/workflows directory
-	_, dirContent, _, err := client.Repositories.GetContents(ctx, owner, repoName, ".github/workflows", nil)
-	if err != nil {
-		println("Error fetching workflows for repo", repo, ":", err.Error())
-		return []string{}
-	}
-
-	files := lo.Filter(dirContent, func(item *github.RepositoryContent, index int) bool {
-		return item.GetType() == "file" && strings.HasSuffix(strings.ToLower(item.GetName()), ".yml") || strings.HasSuffix(strings.ToLower(item.GetName()), ".yaml")
-	})
-
-	return lo.Map(files, func(item *github.RepositoryContent, index int) string {
-		return item.GetName()
-	})
-}
-
-func WorkflowToString(client *github.Client, repo string, workflow string) string {
-	ctx := context.Background()
-
-	// Split repo into owner and name
-	parts := strings.Split(repo, "/")
-	if len(parts) != 2 {
-		return ""
-	}
-	owner, repoName := parts[0], parts[1]
-
-	// Get file content
-	fileContent, _, _, err := client.Repositories.GetContents(ctx, owner, repoName, ".github/workflows/"+workflow, nil)
-	if err != nil {
-		return ""
-	}
-
-	// Decode content
-	contentStr, err := fileContent.GetContent()
-	if err != nil {
-		return ""
-	}
-
-	return contentStr
-}
-
-func FindContributorsToWorkflow(client *github.Client, repo string, workflow string) []string {
-	ctx := context.Background()
-
-	// Split repo into owner and name
-	parts := strings.Split(repo, "/")
-	if len(parts) != 2 {
-		return []string{}
-	}
-	owner, repoName := parts[0], parts[1]
-
-	// Construct the workflow file path
-	workflowPath := ".github/workflows/" + workflow
-
-	// Get commits for the specific workflow file
-	opts := &github.CommitsListOptions{
-		Path: workflowPath,
-		ListOptions: github.ListOptions{
-			PerPage: 100,
-		},
-	}
-
-	// Track unique contributors
-	var contributors []string
-
-	// Fetch all commits for the workflow file (handle pagination)
-	for {
-		commits, resp, err := client.Repositories.ListCommits(ctx, owner, repoName, opts)
-		if err != nil {
-			return []string{}
-		}
-
-		// Extract unique contributor names
-		authors := lo.Filter(commits, func(item *github.RepositoryCommit, index int) bool {
-			return item.Commit != nil && item.Commit.Author != nil && item.Commit.Author.Name != nil
-		})
-
-		authorNames := lo.Map(authors, func(item *github.RepositoryCommit, index int) string {
-			return *item.Commit.Author.Name
-		})
-
-		contributors = lo.Uniq(append(contributors, authorNames...))
-
-		// Check if there are more pages
-		if resp.NextPage == 0 {
-			break
-		}
-		opts.Page = resp.NextPage
-	}
-
-	return contributors
-}
-
 // ParseWorkflow parses the string representation of a GitHub Actions workflow
 // and returns a slice of Action structs representing the actions used in the workflow.
-func ParseWorkflow(workflow string, workflowId int) []Action {
+func ParseWorkflow(workflow string, workflowId int) []models.Action {
 	var workflowMap map[string]interface{}
 
 	err := yaml.Unmarshal([]byte(workflow), &workflowMap)
 	if err != nil {
-		return []Action{}
+		return []models.Action{}
 	}
 
 	// Extract jobs
 	jobsInterface, ok := workflowMap["jobs"]
 	if !ok {
-		return []Action{}
+		return []models.Action{}
 	}
 
 	jobsMap, ok := jobsInterface.(map[string]interface{})
 	if !ok {
-		return []Action{}
+		return []models.Action{}
 	}
 
 	// 1. Get all keys into a slice
@@ -325,7 +223,7 @@ func ParseWorkflow(workflow string, workflowId int) []Action {
 	// 2. Sort the keys alphabetically
 	slices.Sort(keys)
 
-	var actions []Action
+	var actions []models.Action
 
 	actionId := 1
 
@@ -358,14 +256,14 @@ func ParseWorkflow(workflow string, workflowId int) []Action {
 			uses := collections.GetStringProperty(stepMap, "uses")
 
 			// Split uses into action and version
-			actionName, actionVersion := GetActionIdAndVersion(uses)
+			actionName, actionVersion := parsing.GetActionIdAndVersion(uses)
 
 			// Get the various settings for the action
 			env := collections.ConvertStringMap(collections.GetChildMap(stepMap, "env"))
 			with := collections.ConvertStringMap(collections.GetChildMap(stepMap, "with"))
 			settings := collections.GetOtherValues(stepMap, []string{"uses", "env", "with"})
 
-			action := Action{
+			action := models.Action{
 				Id:          fmt.Sprintf("%d-%d", workflowId, actionId),
 				Uses:        actionName,
 				UsesVersion: actionVersion,
@@ -383,21 +281,21 @@ func ParseWorkflow(workflow string, workflowId int) []Action {
 	return actions
 }
 
-func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) ([]Action, []string) {
-	actions := []Action{}
+func FindActionsWithDifferentVersions(actions1 []models.Action, actions2 []models.Action) ([]models.Action, []string) {
+	actions := []models.Action{}
 	result := []string{}
 
 	for _, action1 := range actions1 {
 		for _, action2 := range actions2 {
 
 			if HasVersionDrift(action1, action2) {
-				if !lo.ContainsBy(actions, func(item Action) bool {
+				if !lo.ContainsBy(actions, func(item models.Action) bool {
 					return item.Id == action1.Id
 				}) {
 					actions = append(actions, action1)
 				}
 
-				if !lo.ContainsBy(actions, func(item Action) bool {
+				if !lo.ContainsBy(actions, func(item models.Action) bool {
 					return item.Id == action2.Id
 				}) {
 					actions = append(actions, action2)
@@ -413,25 +311,25 @@ func FindActionsWithDifferentVersions(actions1 []Action, actions2 []Action) ([]A
 	return actions, result
 }
 
-func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) ([]Action, []string) {
+func FindActionsWithSimilarConfigurations(actions1 []models.Action, actions2 []models.Action) ([]models.Action, []string) {
 
-	actions := []Action{}
+	actions := []models.Action{}
 	result := []string{}
 
 	for _, action1 := range actions1 {
 		for _, action2 := range actions2 {
 			if action1.Uses == action2.Uses {
-				if action1.hash != nil && action2.hash != nil {
-					distance := action1.hash.Diff(action2.hash)
+				if action1.Hash != nil && action2.Hash != nil {
+					distance := action1.Hash.Diff(action2.Hash)
 
 					if distance <= HighSimilarity {
-						if !lo.ContainsBy(actions, func(item Action) bool {
+						if !lo.ContainsBy(actions, func(item models.Action) bool {
 							return item.Id == action1.Id
 						}) {
 							actions = append(actions, action1)
 						}
 
-						if !lo.ContainsBy(actions, func(item Action) bool {
+						if !lo.ContainsBy(actions, func(item models.Action) bool {
 							return item.Id == action2.Id
 						}) {
 							actions = append(actions, action2)
@@ -454,67 +352,12 @@ func FindActionsWithSimilarConfigurations(actions1 []Action, actions2 []Action) 
 	return actions, result
 }
 
-func GetWorkflowAdvisories(client *github.Client, repo string) []string {
-	ctx := context.Background()
-
-	owner, repoName, err := splitRepo(repo)
-	if err != nil {
-		return []string{}
-	}
-
-	opts := &github.ListRepositorySecurityAdvisoriesOptions{
-		ListCursorOptions: github.ListCursorOptions{
-			PerPage: 100,
-		},
-	}
-
-	var advisories []string
-
-	// Fetch all security advisories for the repository (handle pagination)
-	for {
-		advisoryList, resp, err := client.SecurityAdvisories.ListRepositorySecurityAdvisories(ctx, owner, repoName, opts)
-		if err != nil {
-			// If there's an error (e.g., no access, repo doesn't exist), return empty list
-			return []string{}
-		}
-
-		// Extract advisory IDs or summaries
-		for _, advisory := range advisoryList {
-			if advisory.GHSAID != nil {
-				advisories = append(advisories, *advisory.GHSAID)
-			}
-		}
-
-		// Check if there are more pages
-		if resp.After == "" {
-			break
-		}
-		opts.After = resp.After
-	}
-
-	if advisories == nil {
-		return []string{}
-	}
-
-	return advisories
-}
-
-func splitRepo(repo string) (string, string, error) {
-	// Split repo into owner and name
-	parts := strings.Split(strings.Replace(repo, "https://github.com/", "", 1), "/")
-	// Ignore any paths that may have been on the end of a url
-	if len(parts) < 2 {
-		return "", "", fmt.Errorf("invalid repository format: %s", repo)
-	}
-	return parts[0], parts[1], nil
-}
-
-func GetActionAuthorsFromActionsList(actionsList [][]Action) []string {
+func GetActionAuthorsFromActionsList(actionsList [][]models.Action) []string {
 	if actionsList == nil {
 		return []string{}
 	}
 
-	return lo.Uniq(lo.FilterMap(lo.Flatten(actionsList), func(item Action, index int) (string, bool) {
+	return lo.Uniq(lo.FilterMap(lo.Flatten(actionsList), func(item models.Action, index int) (string, bool) {
 		split := strings.Split(item.Uses, "/")
 		if len(split) > 0 {
 			if split[0] == "" {
