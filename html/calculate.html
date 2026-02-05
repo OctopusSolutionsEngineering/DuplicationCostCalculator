@@ -120,12 +120,6 @@
             // If we have results, clear the document and show the results table
             if (results) {
                 return h('div', { className: 'container-fluid mt-4 mb-5' },
-                    h('div', { className: 'mb-3' },
-                        h('button', {
-                            className: 'btn btn-secondary',
-                            onClick: () => window.location.href = `repos?repos=${encodeURIComponent(reposParam)}`
-                        }, '← Back to Repository List')
-                    ),
 
                     h('h1', { className: 'mb-4' }, 'Consistent Change Cost Analysis'),
 
@@ -447,6 +441,14 @@
                                 )
                             )
                         )
+                    ),
+
+                    // Back button at bottom
+                    h('div', { className: 'mt-4 mb-3' },
+                        h('button', {
+                            className: 'btn btn-secondary',
+                            onClick: () => window.location.href = `repos?repos=${encodeURIComponent(reposParam)}`
+                        }, '← Back to Repository List')
                     )
                 );
             }
