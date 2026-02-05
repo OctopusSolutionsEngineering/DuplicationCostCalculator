@@ -64,8 +64,6 @@ func CallbackHandlerWrapped(
 		return
 	}
 
-	c.SetSameSite(http.SameSiteStrictMode)
-
 	encrypted, err := encryption.EncryptStringWrapper(tokenResponse.AccessToken, getKey)
 
 	if err != nil {
