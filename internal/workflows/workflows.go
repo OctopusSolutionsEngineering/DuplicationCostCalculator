@@ -149,14 +149,25 @@ func GenerateReportFromWorkflows(workflows map[string][]string, contributors map
 		}
 	}
 
-	report.NumberOfReposWithDuplicationOrDrift = len(lo.Filter(lo.Values(report.Comparisons), func(item map[string]RepoMeasurements, index int) bool {
-		// If any of the comparisons for a repo indicate that there are steps that would need to be updated to ensure consistency between the workflows,
-		// then we can consider that repo to have duplication or drift
-		return len(lo.Filter(lo.Values(item), func(item RepoMeasurements, index int) bool {
-			return item.StepsThatIndicateDuplicationRisk > 0
-		})) > 0
-	}))
-	report.UniqueContributors = lo.Uniq(lo.Flatten(lo.Values(report.Contributors)))
+	// Count the number of repositories that have duplication or drift
+	// A repo has duplication or drift if any of its comparisons indicate steps that would need to be updated
+	allComparisons := lo.Values(report.Comparisons)
+	reposWithDuplicationOrDrift := lo.Filter(allComparisons, func(repoComparisons map[string]RepoMeasurements, index int) bool {
+		// Get all measurements for this repo's comparisons
+		measurements := lo.Values(repoComparisons)
+		// Check if any measurement has steps that indicate duplication risk
+		measurementsWithRisk := lo.Filter(measurements, func(measurement RepoMeasurements, index int) bool {
+			return measurement.StepsThatIndicateDuplicationRisk > 0
+		})
+		// If there's at least one comparison with risk, this repo has duplication or drift
+		return len(measurementsWithRisk) > 0
+	})
+	report.NumberOfReposWithDuplicationOrDrift = len(reposWithDuplicationOrDrift)
+
+	// Get all unique contributors across all repositories
+	allContributorLists := lo.Values(report.Contributors)
+	flattenedContributors := lo.Flatten(allContributorLists)
+	report.UniqueContributors = lo.Uniq(flattenedContributors)
 
 	return report
 }
