@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/encryption"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/infrastructure/client"
 	"github.com/gin-gonic/gin"
 )
@@ -14,12 +15,14 @@ func RequireAuth(c *gin.Context) bool {
 	// we can use a private key for authentication instead of OAuth.
 	if !client.UsePrivateKeyAuth() {
 		// Check if github_token cookie exists
-		token, err := c.Cookie("github_token")
-		if err != nil || token == "" {
+		token, err1 := c.Cookie("github_token")
+		decryptedToken, err2 := encryption.DecryptString(token)
+
+		if err1 != nil || err2 != nil || decryptedToken == "" {
 			// User is not authenticated, redirect to login page with repos query param if present
-			reposParam := c.Query("repos")
+			reposParam := c.Query("login")
 			if reposParam != "" {
-				c.Redirect(http.StatusFound, "/?repos="+reposParam)
+				c.Redirect(http.StatusFound, "/?login="+reposParam)
 			} else {
 				c.Redirect(http.StatusFound, "/")
 			}

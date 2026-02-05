@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/configuration"
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/encryption"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/infrastructure/oauth"
 	"github.com/gin-gonic/gin"
 )
@@ -62,15 +63,24 @@ func CallbackHandlerWrapped(
 		return
 	}
 
+	accessToken, err := encryption.EncryptString(tokenResponse.AccessToken)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to encrypt access token",
+		})
+		return
+	}
+
 	// Set access token in HTTP-only cookie
 	c.SetCookie(
-		"github_token",            // name
-		tokenResponse.AccessToken, // value
-		3600,                      // max age (1 hour)
-		"/",                       // path
-		"",                        // domain (empty = current domain)
-		false,                     // secure (set to true in production with HTTPS)
-		true,                      // httpOnly
+		"github_token", // name
+		accessToken,    // value
+		3600,           // max age (1 hour)
+		"/",            // path
+		"",             // domain (empty = current domain)
+		false,          // secure (set to true in production with HTTPS)
+		true,           // httpOnly
 	)
 
 	// Redirect to repos page with repos query param if state was provided

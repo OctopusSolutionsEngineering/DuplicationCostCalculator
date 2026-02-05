@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/encryption"
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/infrastructure/client"
 	"github.com/gin-gonic/gin"
 )
@@ -21,8 +22,9 @@ func Login(c *gin.Context) {
 	}
 
 	// Check if github_token cookie exists
-	token, err := c.Cookie("github_token")
-	if err == nil && token != "" {
+	token, err1 := c.Cookie("github_token")
+	accessToken, err2 := encryption.DecryptString(token)
+	if err1 == nil && err2 == nil && accessToken != "" {
 		// User is authenticated, redirect to repos page
 		if reposParam != "" {
 			c.Redirect(http.StatusFound, "/repos?repos="+reposParam)
