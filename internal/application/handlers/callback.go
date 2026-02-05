@@ -62,6 +62,8 @@ func CallbackHandlerWrapped(
 		return
 	}
 
+	c.SetSameSite(http.SameSiteStrictMode)
+
 	// Set access token in HTTP-only cookie
 	c.SetCookie(
 		"github_token",            // name
