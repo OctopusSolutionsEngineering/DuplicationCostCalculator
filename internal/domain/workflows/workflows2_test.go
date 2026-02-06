@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestGenerateReportFromWorkflowsSimilarSteps(t *testing.T) {
+func TestGenerateReportFromWorkflowsSimilarScripts(t *testing.T) {
 	workflow := `
 name: Single Workflow
 jobs:
