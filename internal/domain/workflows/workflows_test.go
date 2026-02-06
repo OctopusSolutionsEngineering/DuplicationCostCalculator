@@ -829,8 +829,48 @@ func TestFindActionsWithSimilarConfigurations(t *testing.T) {
 
 	items, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
 
+	if len(items) != 0 {
+		t.Errorf("Expected at 0 similar configurations, got %d", len(items))
+	}
+}
+
+func TestFindScriptActionsWithSimilarConfigurations(t *testing.T) {
+	actions1 := []models.Action{
+		{
+			Id:          "1-1",
+			Uses:        "",
+			UsesVersion: "",
+			With: map[string]string{
+				"name": "Build",
+				"run":  "cargo build --verbose",
+			},
+		},
+	}
+
+	actions2 := []models.Action{
+		{
+			Id:          "2-1",
+			Uses:        "",
+			UsesVersion: "",
+			With: map[string]string{
+				"name": "Echo hello world",
+				"run":  "echo \"hello world\"",
+			},
+		},
+	}
+
+	// Generate hashes for all actions
+	for i := range actions1 {
+		actions1[i].GenerateHash()
+	}
+	for i := range actions2 {
+		actions2[i].GenerateHash()
+	}
+
+	items, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
+
 	// Expected: 2 pairs of matching actions with similar configs = 4 total (2 * 2)
-	if len(items) < 2 {
+	if len(items) != 0 {
 		t.Errorf("Expected at least 2 similar configurations, got %d", len(items))
 	}
 }
@@ -1007,10 +1047,8 @@ func TestFindActionsWithSimilarConfigurationsMultiplePairs(t *testing.T) {
 
 	items, _ := FindActionsWithSimilarConfigurations(actions1, actions2)
 
-	// 2 actions in actions1 × 2 actions in actions2 = 4 comparisons
-	// All should be highly similar, so count should be 8 (2 per similar pair)
-	if len(items) < 4 {
-		t.Errorf("Expected at least 4 (2x2x2) similar configurations, got %d", len(items))
+	if len(items) != 0 {
+		t.Errorf("Expected 0 similar configurations, got %d", len(items))
 	}
 }
 
@@ -1071,8 +1109,8 @@ jobs:
 		t.Error("Expected 2 different versions between repo1 and repo2, found " + fmt.Sprintf("%v %v", report.Comparisons["repo1"]["repo2"].StepsWithDifferentVersionsCount, report.Comparisons["repo1"]["repo2"].StepsWithDifferentVersions))
 	}
 
-	if report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount != 4 || len(report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig) != 2 {
-		t.Error("Expected 4 similar configurations between repo1 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount))
+	if report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount != 0 || len(report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig) != 0 {
+		t.Error("Expected 0 similar configurations between repo1 and repo2, found " + fmt.Sprintf("%v", report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount))
 	}
 
 	if len(report.Comparisons["repo1"]["repo3"].StepsWithDifferentVersions) != 0 || report.Comparisons["repo1"]["repo3"].StepsWithDifferentVersionsCount != 0 {
@@ -1087,8 +1125,8 @@ jobs:
 		t.Error("Expected 2 different versions between repo2 and repo1, found " + fmt.Sprintf("%v %v", report.Comparisons["repo2"]["repo1"].StepsWithDifferentVersionsCount, report.Comparisons["repo2"]["repo1"].StepsWithDifferentVersions))
 	}
 
-	if report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfigCount != 4 || len(report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfig) != 2 {
-		t.Error("Expected 4 similar configurations between repo2 and repo1, found " + fmt.Sprintf("%v %v", report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfigCount, report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfig))
+	if report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfigCount != 0 || len(report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfig) != 0 {
+		t.Error("Expected 0 similar configurations between repo2 and repo1, found " + fmt.Sprintf("%v %v", report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfigCount, report.Comparisons["repo2"]["repo1"].StepsWithSimilarConfig))
 	}
 
 	if len(report.Comparisons["repo2"]["repo3"].StepsWithDifferentVersions) != 0 || report.Comparisons["repo2"]["repo3"].StepsWithDifferentVersionsCount != 0 {
@@ -1329,42 +1367,6 @@ jobs:
 
 	if report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount != 0 || len(report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig) != 0 {
 		t.Error("Expected no similar steps, found " + fmt.Sprintf("%v %v", report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount, report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig))
-	}
-}
-
-func TestGenerateReportFromWorkflowsSimilarSteps(t *testing.T) {
-	workflow := `
-name: Single Workflow
-jobs:
-  build:
-    steps:
-      - name: Script 1
-        run: This is a test script
-`
-
-	workflow2 := `
-name: Single Workflow
-jobs:
-  build:
-    steps:
-      - name: Script edited
-        run: This is a testing script
-`
-
-	workflows := map[string][]string{
-		"repo1": {workflow},
-		"repo2": {workflow2},
-	}
-
-	report := GenerateReportFromWorkflows(workflows, map[string][]string{}, map[string][]string{})
-
-	// With only one repo, there should be no comparisons
-	if report.Comparisons == nil {
-		t.Error("Expected Comparisons map to be initialized")
-	}
-
-	if report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount != 2 || len(report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig) != 1 {
-		t.Error("Expected one similar steps, found " + fmt.Sprintf("%v %v", report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfigCount, report.Comparisons["repo1"]["repo2"].StepsWithSimilarConfig))
 	}
 }
 

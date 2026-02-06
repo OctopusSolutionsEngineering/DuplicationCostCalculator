@@ -246,6 +246,7 @@ func ParseWorkflow(workflow string, workflowId int) []models.Action {
 			}
 
 			uses := collections.GetStringProperty(stepMap, "uses")
+			run := collections.GetStringProperty(stepMap, "run")
 
 			// Split uses into action and version
 			actionName, actionVersion := parsing.GetActionIdAndVersion(uses)
@@ -262,6 +263,7 @@ func ParseWorkflow(workflow string, workflowId int) []models.Action {
 				Settings:    settings,
 				Env:         env,
 				With:        with,
+				Run:         run,
 			}
 
 			action.GenerateHash()

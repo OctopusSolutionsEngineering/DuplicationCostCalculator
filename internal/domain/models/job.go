@@ -3,6 +3,7 @@ package models
 import (
 	"github.com/OctopusSolutionsEngineering/DuplicationCostCalculator/internal/domain/collections"
 	"github.com/glaslos/tlsh"
+	"github.com/samber/lo"
 )
 
 type Action struct {
@@ -17,6 +18,8 @@ type Action struct {
 	Env map[string]string `json:"env"`
 	// With is a map of input parameters provided to the action.
 	With map[string]string `json:"with"`
+	// This is used by script steps
+	Run string `json:"run"`
 	// A locality sensitive hash of the action configuration.
 	Hash *tlsh.TLSH
 }
@@ -52,8 +55,24 @@ func (action *Action) GenerateHash() {
 		}
 	}
 
+	if action.Run != "" {
+		_, err := action1Hash.Write([]byte(action.Run))
+		foundConfig = true
+		if err != nil {
+			return
+		}
+	}
+
 	if foundConfig {
 		action1Hash.Sum(nil)
+
+		if lo.EveryBy(action1Hash.Binary(), func(b byte) bool {
+			return b == 0
+		}) {
+			return
+		}
+
+		// Small strings can not be hashed
 		action.Hash = action1Hash
 	}
 }
