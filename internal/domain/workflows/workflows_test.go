@@ -1196,7 +1196,7 @@ jobs:
   build:
     steps:
       - name: Script 1
-        run: This is a test script
+        run: This is a test script, blah, blah, blah, blah, some more text to make it long enough to generate a good hash
 `
 
 	workflow2 := `
@@ -1205,7 +1205,7 @@ jobs:
   build:
     steps:
       - name: Some script step
-        run: These scripts are nothing alike
+        run: These scripts are nothing alike but they are also long enough to generate good hashes, so they shouldn't be counted as similar
 `
 
 	workflows := map[string][]string{
