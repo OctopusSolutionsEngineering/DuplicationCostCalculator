@@ -871,7 +871,7 @@ func TestFindScriptActionsWithSimilarConfigurations(t *testing.T) {
 
 	// Expected: 2 pairs of matching actions with similar configs = 4 total (2 * 2)
 	if len(items) != 0 {
-		t.Errorf("Expected at least 2 similar configurations, got %d", len(items))
+		t.Errorf("Expected 0 similar configurations, got %d", len(items))
 	}
 }
 
