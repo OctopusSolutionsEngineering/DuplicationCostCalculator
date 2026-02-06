@@ -55,14 +55,6 @@ func (action *Action) GenerateHash() {
 		}
 	}
 
-	if action.Run != "" {
-		_, err := action1Hash.Write([]byte(action.Run))
-		foundConfig = true
-		if err != nil {
-			return
-		}
-	}
-
 	if foundConfig {
 		action1Hash.Sum(nil)
 
