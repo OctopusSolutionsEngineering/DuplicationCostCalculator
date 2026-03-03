@@ -466,6 +466,18 @@
                             className: 'btn btn-secondary',
                             onClick: () => window.location.href = `repos?repos=${encodeURIComponent(reposParam)}`
                         }, '← Back to Repository List')
+                    ),
+
+                    // Source code link
+                    h('div', { className: 'text-center text-muted mt-3 mb-4' },
+                        h('small', null,
+                            'Source code available at ',
+                            h('a', {
+                                href: 'https://github.com/OctopusSolutionsEngineering/DuplicationCostCalculator',
+                                target: '_blank',
+                                rel: 'noopener noreferrer'
+                            }, 'github.com/OctopusSolutionsEngineering/DuplicationCostCalculator')
+                        )
                     )
                 );
             }
