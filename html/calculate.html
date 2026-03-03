@@ -296,7 +296,15 @@
                     ),
                     hasComparisons && h('div', { className: 'alert alert-light mt-4' },
                         h('p', { className: 'mb-3' },
-                            'A "consistent change" is any change to an action (such as a version or configuration change) in a GitHub Workflow that must be replicated consistently in other workflows.'
+                            'A "consistent change" is any change to an action (such as a version, configuration change, or security update) in a GitHub Workflow that must be replicated consistently in other workflows.'
+                        ),
+                        h('p', { className: 'mb-3' },
+                            h('a', {
+                                href: 'https://github.com/aquasecurity/trivy/discussions/10265',
+                                target: '_blank',
+                                rel: 'noopener noreferrer'
+                            }, 'This GitHub discussion thread',
+                            ' provides a real-world example of security issues that relate to GitHub workflows.')
                         ),
                         h('p', { className: 'mb-3' },
                             'This includes:'
