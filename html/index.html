@@ -23,7 +23,10 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const reposParam = urlParams.get('repos');
 
-                // Replace with your GitHub OAuth App credentials
+                // Note that the Client ID is used by the web application Oauth flow and is not a secret.
+                // https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#web-application-flow
+                // It is safe to include it in client-side code.
+                // Please do not contact the security about this value being hard coded.
                 const clientId = 'Iv23liJtGEKxmrX20YUl';
                 const redirectUri = encodeURIComponent(window.location.origin + '/callback');
                 const scope = 'workflow';
